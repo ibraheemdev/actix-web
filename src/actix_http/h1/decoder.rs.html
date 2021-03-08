@@ -1,5 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix-http/src/h1/decoder.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>decoder.rs - source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled ><script id="default-settings"></script><script src="../../../storage.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="shortcut icon" href="https://actix.rs/favicon.ico"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../../actix_http/index.html'><div class='logo-container'><img src='https://actix.rs/img/logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><script src="../../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
-                <a id="settings-menu" href="../../../settings.html"><img src="../../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">   1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix-http/src/h1/decoder.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>decoder.rs - source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled ><script id="default-settings"></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="shortcut icon" href="https://actix.rs/favicon.ico"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../actix_http/index.html'><div class='logo-container'><img src='https://actix.rs/img/logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><script src="../../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
+                <a id="settings-menu" href="../../../settings.html"><img src="../../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">   1</span>
 <span id="2">   2</span>
 <span id="3">   3</span>
 <span id="4">   4</span>
@@ -1235,6 +1235,15 @@
 <span id="1234">1234</span>
 <span id="1235">1235</span>
 <span id="1236">1236</span>
+<span id="1237">1237</span>
+<span id="1238">1238</span>
+<span id="1239">1239</span>
+<span id="1240">1240</span>
+<span id="1241">1241</span>
+<span id="1242">1242</span>
+<span id="1243">1243</span>
+<span id="1244">1244</span>
+<span id="1245">1245</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">convert</span>::<span class="ident">TryFrom</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">io</span>;
@@ -1252,7 +1261,7 @@
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">message</span>::{<span class="ident">ConnectionType</span>, <span class="ident">ResponseHead</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">request</span>::<span class="ident">Request</span>;
 
-<span class="kw">const</span> <span class="ident">MAX_BUFFER_SIZE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">131_072</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const</span> <span class="ident">MAX_BUFFER_SIZE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">131_072</span>;
 <span class="kw">const</span> <span class="ident">MAX_HEADERS</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">96</span>;
 
 <span class="doccomment">/// Incoming message decoder</span>
@@ -1375,7 +1384,7 @@
                             <span class="ident">expect</span> <span class="op">=</span> <span class="bool-val">true</span>;
                         }
                     }
-                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> (),
+                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {}
                 }
 
                 <span class="ident">headers</span>.<span class="ident">append</span>(<span class="ident">name</span>, <span class="ident">value</span>);
@@ -1441,7 +1450,15 @@
 
                     (<span class="ident">len</span>, <span class="ident">method</span>, <span class="ident">uri</span>, <span class="ident">version</span>, <span class="ident">req</span>.<span class="ident">headers</span>.<span class="ident">len</span>())
                 }
-                <span class="ident">httparse</span>::<span class="ident">Status</span>::<span class="ident">Partial</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+                <span class="ident">httparse</span>::<span class="ident">Status</span>::<span class="ident">Partial</span> <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="kw">return</span> <span class="kw">if</span> <span class="ident">src</span>.<span class="ident">len</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="ident">MAX_BUFFER_SIZE</span> {
+                        <span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;MAX_BUFFER_SIZE unprocessed data reached, closing&quot;</span>);
+                        <span class="prelude-val">Err</span>(<span class="ident">ParseError</span>::<span class="ident">TooLarge</span>)
+                    } <span class="kw">else</span> {
+                        <span class="comment">// Return None to notify more read are needed for parsing request</span>
+                        <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
+                    };
+                }
             }
         };
 
@@ -1454,15 +1471,12 @@
         <span class="kw">let</span> <span class="ident">decoder</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">length</span> {
             <span class="ident">PayloadLength</span>::<span class="ident">Payload</span>(<span class="ident">pl</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">pl</span>,
             <span class="ident">PayloadLength</span>::<span class="ident">UpgradeWebSocket</span> <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="comment">// upgrade(websocket)</span>
+                <span class="comment">// upgrade (WebSocket)</span>
                 <span class="ident">PayloadType</span>::<span class="ident">Stream</span>(<span class="ident">PayloadDecoder</span>::<span class="ident">eof</span>())
             }
             <span class="ident">PayloadLength</span>::<span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">if</span> <span class="ident">method</span> <span class="op">=</span><span class="op">=</span> <span class="ident">Method</span>::<span class="ident">CONNECT</span> {
                     <span class="ident">PayloadType</span>::<span class="ident">Stream</span>(<span class="ident">PayloadDecoder</span>::<span class="ident">eof</span>())
-                } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">src</span>.<span class="ident">len</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="ident">MAX_BUFFER_SIZE</span> {
-                    <span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;MAX_BUFFER_SIZE unprocessed data reached, closing&quot;</span>);
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ParseError</span>::<span class="ident">TooLarge</span>);
                 } <span class="kw">else</span> {
                     <span class="ident">PayloadType</span>::<span class="prelude-val">None</span>
                 }
@@ -1511,7 +1525,14 @@
 
                     (<span class="ident">len</span>, <span class="ident">version</span>, <span class="ident">status</span>, <span class="ident">res</span>.<span class="ident">headers</span>.<span class="ident">len</span>())
                 }
-                <span class="ident">httparse</span>::<span class="ident">Status</span>::<span class="ident">Partial</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+                <span class="ident">httparse</span>::<span class="ident">Status</span>::<span class="ident">Partial</span> <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="kw">return</span> <span class="kw">if</span> <span class="ident">src</span>.<span class="ident">len</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="ident">MAX_BUFFER_SIZE</span> {
+                        <span class="macro">error</span><span class="macro">!</span>(<span class="string">&quot;MAX_BUFFER_SIZE unprocessed data reached, closing&quot;</span>);
+                        <span class="prelude-val">Err</span>(<span class="ident">ParseError</span>::<span class="ident">TooLarge</span>)
+                    } <span class="kw">else</span> {
+                        <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
+                    }
+                }
             }
         };
 
@@ -1527,9 +1548,6 @@
         } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">status</span> <span class="op">=</span><span class="op">=</span> <span class="ident">StatusCode</span>::<span class="ident">SWITCHING_PROTOCOLS</span> {
             <span class="comment">// switching protocol or connect</span>
             <span class="ident">PayloadType</span>::<span class="ident">Stream</span>(<span class="ident">PayloadDecoder</span>::<span class="ident">eof</span>())
-        } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">src</span>.<span class="ident">len</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="ident">MAX_BUFFER_SIZE</span> {
-            <span class="macro">error</span><span class="macro">!</span>(<span class="string">&quot;MAX_BUFFER_SIZE unprocessed data reached, closing&quot;</span>);
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ParseError</span>::<span class="ident">TooLarge</span>);
         } <span class="kw">else</span> {
             <span class="comment">// for HTTP/1.0 read to eof and close connection</span>
             <span class="kw">if</span> <span class="ident">msg</span>.<span class="ident">version</span> <span class="op">=</span><span class="op">=</span> <span class="ident">Version</span>::<span class="ident">HTTP_10</span> {
@@ -1881,7 +1899,7 @@
     <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
     <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">error</span>::<span class="ident">ParseError</span>;
     <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">http</span>::<span class="ident">header</span>::{<span class="ident">HeaderName</span>, <span class="ident">SET_COOKIE</span>};
-    <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">httpmessage</span>::<span class="ident">HttpMessage</span>;
+    <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">HttpMessage</span>;
 
     <span class="kw">impl</span> <span class="ident">PayloadType</span> {
         <span class="kw">fn</span> <span class="ident">unwrap</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">PayloadDecoder</span> {
@@ -1923,7 +1941,7 @@
             <span class="kw">match</span> <span class="ident">MessageDecoder</span>::<span class="op">&lt;</span><span class="ident">Request</span><span class="op">&gt;</span>::<span class="ident">default</span>().<span class="ident">decode</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">e</span>) {
                 <span class="prelude-val">Err</span>(<span class="ident">err</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">match</span> <span class="ident">err</span> {
                     <span class="ident">ParseError</span>::<span class="ident">Io</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(<span class="string">&quot;Parse error expected&quot;</span>),
-                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> (),
+                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {}
                 },
                 <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(<span class="string">&quot;Error expected&quot;</span>),
             }
@@ -2059,8 +2077,8 @@
             .<span class="ident">get_all</span>(<span class="ident">SET_COOKIE</span>)
             .<span class="ident">map</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">v</span>.<span class="ident">to_str</span>().<span class="ident">unwrap</span>().<span class="ident">to_owned</span>())
             .<span class="ident">collect</span>();
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">val</span>[<span class="number">1</span>], <span class="string">&quot;c1=cookie1&quot;</span>);
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">val</span>[<span class="number">0</span>], <span class="string">&quot;c2=cookie2&quot;</span>);
+        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">val</span>[<span class="number">0</span>], <span class="string">&quot;c1=cookie1&quot;</span>);
+        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">val</span>[<span class="number">1</span>], <span class="string">&quot;c2=cookie2&quot;</span>);
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
@@ -2473,4 +2491,5 @@
     }
 }
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../../";window.currentCrate = "actix_http";</script><script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script><script defer src="../../../search-index.js"></script></body></html>
+</section><section id="search" class="content hidden"></section><section class="footer"></section><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="actix_http" data-search-js="../../../search-index.js"></div>
+    <script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script></body></html>

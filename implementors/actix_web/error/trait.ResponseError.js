@@ -1,3 +1,0 @@
-(function() {var implementors = {};
-implementors["actix_web"] = [{"text":"impl ResponseError for UrlGenerationError","synthetic":false,"types":[]},{"text":"impl ResponseError for UrlencodedError","synthetic":false,"types":[]},{"text":"impl ResponseError for JsonPayloadError","synthetic":false,"types":[]},{"text":"impl ResponseError for PathError","synthetic":false,"types":[]},{"text":"impl ResponseError for QueryPayloadError","synthetic":false,"types":[]},{"text":"impl ResponseError for ReadlinesError","synthetic":false,"types":[]}];
-if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

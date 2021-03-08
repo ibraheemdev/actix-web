@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["ws","Websocket integration"]],"struct":[["HttpContext","Execution context for http actors"]]});
+initSidebarItems({"mod":[["ws","Websocket integration."]],"struct":[["HttpContext","Execution context for HTTP actors"]]});
