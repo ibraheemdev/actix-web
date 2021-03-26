@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/scope.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>scope.rs - source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script id="default-settings"></script><script src="../../storage.js"></script><script src="../../crates.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="shortcut icon" href="https://actix.rs/favicon.ico"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../actix_web/index.html'><div class='logo-container'><img src='https://actix.rs/img/logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/scope.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>scope.rs - source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script id="default-settings"></script><script src="../../storage.js"></script><script src="../../crates.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="shortcut icon" href="https://actix.rs/favicon.ico"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../actix_web/index.html'><div class='logo-container'><img src='https://actix.rs/img/logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
                 <a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">   1</span>
 <span id="2">   2</span>
 <span id="3">   3</span>
@@ -1115,13 +1115,11 @@
 <span id="1114">1114</span>
 <span id="1115">1115</span>
 <span id="1116">1116</span>
-<span id="1117">1117</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">cell</span>::<span class="ident">RefCell</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">fmt</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">future</span>::<span class="ident">Future</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">rc</span>::<span class="ident">Rc</span>;
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">task</span>::<span class="ident">Poll</span>;
 
 <span class="kw">use</span> <span class="ident">actix_http</span>::<span class="ident">Extensions</span>;
 <span class="kw">use</span> <span class="ident">actix_router</span>::{<span class="ident">ResourceDef</span>, <span class="ident">Router</span>};
@@ -1160,7 +1158,7 @@
 <span class="doccomment">/// You can get variable path segments from `HttpRequest::match_info()`.</span>
 <span class="doccomment">/// `Path` extractor also is able to extract scope level variable segments.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// ```rust</span>
+<span class="doccomment">/// ```</span>
 <span class="doccomment">/// use actix_web::{web, App, HttpResponse};</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// fn main() {</span>
@@ -1217,7 +1215,7 @@
 {
     <span class="doccomment">/// Add match guard to a scope.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// ```rust</span>
+    <span class="doccomment">/// ```</span>
     <span class="doccomment">/// use actix_web::{web, guard, App, HttpRequest, HttpResponse};</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// async fn index(data: web::Path&lt;(String, String)&gt;) -&gt; &amp;&#39;static str {</span>
@@ -1243,7 +1241,7 @@
     <span class="doccomment">/// Set or override application data. Application data could be accessed</span>
     <span class="doccomment">/// by using `Data&lt;T&gt;` extractor where `T` is data type.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// ```rust</span>
+    <span class="doccomment">/// ```</span>
     <span class="doccomment">/// use std::cell::Cell;</span>
     <span class="doccomment">/// use actix_web::{web, App, HttpResponse, Responder};</span>
     <span class="doccomment">///</span>
@@ -1288,7 +1286,7 @@
     <span class="doccomment">/// different module or even library. For example,</span>
     <span class="doccomment">/// some of the resource&#39;s configuration could be moved to different module.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// ```rust</span>
+    <span class="doccomment">/// ```</span>
     <span class="doccomment">/// # extern crate actix_web;</span>
     <span class="doccomment">/// use actix_web::{web, middleware, App, HttpResponse};</span>
     <span class="doccomment">///</span>
@@ -1335,7 +1333,7 @@
     <span class="doccomment">/// * *Scope* is a set of resources with common root path.</span>
     <span class="doccomment">/// * &quot;StaticFiles&quot; is a service for static files support</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// ```rust</span>
+    <span class="doccomment">/// ```</span>
     <span class="doccomment">/// use actix_web::{web, App, HttpRequest};</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// struct AppState;</span>
@@ -1367,7 +1365,7 @@
     <span class="doccomment">/// This method can be called multiple times, in that case</span>
     <span class="doccomment">/// multiple resources with one route would be registered for same resource path.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// ```rust</span>
+    <span class="doccomment">/// ```</span>
     <span class="doccomment">/// use actix_web::{web, App, HttpResponse};</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// async fn index(data: web::Path&lt;(String, String)&gt;) -&gt; &amp;&#39;static str {</span>
@@ -1461,7 +1459,7 @@
     <span class="doccomment">/// to Route or Application level middleware, in that Scope-level middleware</span>
     <span class="doccomment">/// can not modify ServiceResponse.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// ```rust</span>
+    <span class="doccomment">/// ```</span>
     <span class="doccomment">/// use actix_service::Service;</span>
     <span class="doccomment">/// use actix_web::{web, App};</span>
     <span class="doccomment">/// use actix_web::http::{header::CONTENT_TYPE, HeaderValue};</span>
