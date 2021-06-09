@@ -1,7 +1,6 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix-multipart/src/server.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>server.rs - source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script id="default-settings"></script><script src="../../storage.js"></script><script src="../../crates.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../favicon.svg">
 <link rel="alternate icon" type="image/png" href="../../favicon-16x16.png">
-<link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../actix_multipart/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
-                <a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">   1</span>
+<link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../actix_multipart/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img src="../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../settings.html" title="settings"><img src="../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">   1</span>
 <span id="2">   2</span>
 <span id="3">   3</span>
 <span id="4">   4</span>
@@ -1186,25 +1185,25 @@
 <span id="1183">1183</span>
 <span id="1184">1184</span>
 <span id="1185">1185</span>
-</pre><div class="example-wrap"><pre class="rust ">
-<span class="doccomment">//! Multipart payload support</span>
+</pre><pre class="rust">
+<span class="doccomment">//! Multipart response payload support.</span>
 
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">cell</span>::{<span class="ident">Cell</span>, <span class="ident">RefCell</span>, <span class="ident">RefMut</span>};
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">convert</span>::<span class="ident">TryFrom</span>;
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">marker</span>::<span class="ident">PhantomData</span>;
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">pin</span>::<span class="ident">Pin</span>;
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">rc</span>::<span class="ident">Rc</span>;
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
+<span class="kw">use</span> <span class="ident">std::cell</span>::{<span class="ident">Cell</span>, <span class="ident">RefCell</span>, <span class="ident">RefMut</span>};
+<span class="kw">use</span> <span class="ident">std::convert::TryFrom</span>;
+<span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
+<span class="kw">use</span> <span class="ident">std::pin::Pin</span>;
+<span class="kw">use</span> <span class="ident">std::rc::Rc</span>;
+<span class="kw">use</span> <span class="ident">std::task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">cmp</span>, <span class="ident">fmt</span>};
 
+<span class="kw">use</span> <span class="ident">actix_web::error</span>::{<span class="ident">ParseError</span>, <span class="ident">PayloadError</span>};
+<span class="kw">use</span> <span class="ident">actix_web::http::header</span>::{<span class="self">self</span>, <span class="ident">ContentDisposition</span>, <span class="ident">HeaderMap</span>, <span class="ident">HeaderName</span>, <span class="ident">HeaderValue</span>};
 <span class="kw">use</span> <span class="ident">bytes</span>::{<span class="ident">Bytes</span>, <span class="ident">BytesMut</span>};
-<span class="kw">use</span> <span class="ident">futures_util</span>::<span class="ident">stream</span>::{<span class="ident">LocalBoxStream</span>, <span class="ident">Stream</span>, <span class="ident">StreamExt</span>};
+<span class="kw">use</span> <span class="ident">futures_core::stream</span>::{<span class="ident">LocalBoxStream</span>, <span class="ident">Stream</span>};
+<span class="kw">use</span> <span class="ident">futures_util::stream::StreamExt</span> <span class="kw">as</span> <span class="kw">_</span>;
+<span class="kw">use</span> <span class="ident">local_waker::LocalWaker</span>;
 
-<span class="kw">use</span> <span class="ident">actix_utils</span>::<span class="ident">task</span>::<span class="ident">LocalWaker</span>;
-<span class="kw">use</span> <span class="ident">actix_web</span>::<span class="ident">error</span>::{<span class="ident">ParseError</span>, <span class="ident">PayloadError</span>};
-<span class="kw">use</span> <span class="ident">actix_web</span>::<span class="ident">http</span>::<span class="ident">header</span>::{<span class="self">self</span>, <span class="ident">ContentDisposition</span>, <span class="ident">HeaderMap</span>, <span class="ident">HeaderName</span>, <span class="ident">HeaderValue</span>};
-
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">error</span>::<span class="ident">MultipartError</span>;
+<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::error::MultipartError</span>;
 
 <span class="kw">const</span> <span class="ident">MAX_HEADERS</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">32</span>;
 
@@ -1250,30 +1249,30 @@
     <span class="kw">where</span>
         <span class="ident">S</span>: <span class="ident">Stream</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Bytes</span>, <span class="ident">PayloadError</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Unpin</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
     {
-        <span class="kw">match</span> <span class="self">Self</span>::<span class="ident">boundary</span>(<span class="ident">headers</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">boundary</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Multipart</span>::<span class="ident">from_boundary</span>(<span class="ident">boundary</span>, <span class="ident">stream</span>),
-            <span class="prelude-val">Err</span>(<span class="ident">err</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Multipart</span>::<span class="ident">from_error</span>(<span class="ident">err</span>),
+        <span class="kw">match</span> <span class="self">Self</span><span class="ident">::boundary</span>(<span class="ident">headers</span>) {
+            <span class="prelude-val">Ok</span>(<span class="ident">boundary</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Multipart::from_boundary</span>(<span class="ident">boundary</span>, <span class="ident">stream</span>),
+            <span class="prelude-val">Err</span>(<span class="ident">err</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Multipart::from_error</span>(<span class="ident">err</span>),
         }
     }
 
     <span class="doccomment">/// Extract boundary info from headers.</span>
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">boundary</span>(<span class="ident">headers</span>: <span class="kw-2">&amp;</span><span class="ident">HeaderMap</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">MultipartError</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">content_type</span>) <span class="op">=</span> <span class="ident">headers</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">header</span>::<span class="ident">CONTENT_TYPE</span>) {
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">content_type</span>) <span class="op">=</span> <span class="ident">headers</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">header::CONTENT_TYPE</span>) {
             <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">content_type</span>) <span class="op">=</span> <span class="ident">content_type</span>.<span class="ident">to_str</span>() {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">ct</span>) <span class="op">=</span> <span class="ident">content_type</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">mime</span>::<span class="ident">Mime</span><span class="op">&gt;</span>() {
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">boundary</span>) <span class="op">=</span> <span class="ident">ct</span>.<span class="ident">get_param</span>(<span class="ident">mime</span>::<span class="ident">BOUNDARY</span>) {
+                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">ct</span>) <span class="op">=</span> <span class="ident">content_type</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">mime::Mime</span><span class="op">&gt;</span>() {
+                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">boundary</span>) <span class="op">=</span> <span class="ident">ct</span>.<span class="ident">get_param</span>(<span class="ident">mime::BOUNDARY</span>) {
                         <span class="prelude-val">Ok</span>(<span class="ident">boundary</span>.<span class="ident">as_str</span>().<span class="ident">to_owned</span>())
                     } <span class="kw">else</span> {
-                        <span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">Boundary</span>)
+                        <span class="prelude-val">Err</span>(<span class="ident">MultipartError::Boundary</span>)
                     }
                 } <span class="kw">else</span> {
-                    <span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">ParseContentType</span>)
+                    <span class="prelude-val">Err</span>(<span class="ident">MultipartError::ParseContentType</span>)
                 }
             } <span class="kw">else</span> {
-                <span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">ParseContentType</span>)
+                <span class="prelude-val">Err</span>(<span class="ident">MultipartError::ParseContentType</span>)
             }
         } <span class="kw">else</span> {
-            <span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">NoContentType</span>)
+            <span class="prelude-val">Err</span>(<span class="ident">MultipartError::NoContentType</span>)
         }
     }
 
@@ -1284,12 +1283,12 @@
     {
         <span class="ident">Multipart</span> {
             <span class="ident">error</span>: <span class="prelude-val">None</span>,
-            <span class="ident">safety</span>: <span class="ident">Safety</span>::<span class="ident">new</span>(),
-            <span class="ident">inner</span>: <span class="prelude-val">Some</span>(<span class="ident">Rc</span>::<span class="ident">new</span>(<span class="ident">RefCell</span>::<span class="ident">new</span>(<span class="ident">InnerMultipart</span> {
+            <span class="ident">safety</span>: <span class="ident">Safety::new</span>(),
+            <span class="ident">inner</span>: <span class="prelude-val">Some</span>(<span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">InnerMultipart</span> {
                 <span class="ident">boundary</span>,
-                <span class="ident">payload</span>: <span class="ident">PayloadRef</span>::<span class="ident">new</span>(<span class="ident">PayloadBuffer</span>::<span class="ident">new</span>(<span class="ident">Box</span>::<span class="ident">new</span>(<span class="ident">stream</span>))),
-                <span class="ident">state</span>: <span class="ident">InnerState</span>::<span class="ident">FirstBoundary</span>,
-                <span class="ident">item</span>: <span class="ident">InnerMultipartItem</span>::<span class="prelude-val">None</span>,
+                <span class="ident">payload</span>: <span class="ident">PayloadRef::new</span>(<span class="ident">PayloadBuffer::new</span>(<span class="ident">Box::new</span>(<span class="ident">stream</span>))),
+                <span class="ident">state</span>: <span class="ident">InnerState::FirstBoundary</span>,
+                <span class="ident">item</span>: <span class="ident">InnerMultipartItem::None</span>,
             }))),
         }
     }
@@ -1298,7 +1297,7 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">from_error</span>(<span class="ident">err</span>: <span class="ident">MultipartError</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Multipart</span> {
         <span class="ident">Multipart</span> {
             <span class="ident">error</span>: <span class="prelude-val">Some</span>(<span class="ident">err</span>),
-            <span class="ident">safety</span>: <span class="ident">Safety</span>::<span class="ident">new</span>(),
+            <span class="ident">safety</span>: <span class="ident">Safety::new</span>(),
             <span class="ident">inner</span>: <span class="prelude-val">None</span>,
         }
     }
@@ -1307,9 +1306,9 @@
 <span class="kw">impl</span> <span class="ident">Stream</span> <span class="kw">for</span> <span class="ident">Multipart</span> {
     <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Field</span>, <span class="ident">MultipartError</span><span class="op">&gt;</span>;
 
-    <span class="kw">fn</span> <span class="ident">poll_next</span>(<span class="kw-2">mut</span> <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Item</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">poll_next</span>(<span class="kw-2">mut</span> <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span><span class="ident">::Item</span><span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">err</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">error</span>.<span class="ident">take</span>() {
-            <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">err</span>)))
+            <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">err</span>)))
         } <span class="kw">else</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">safety</span>.<span class="ident">current</span>() {
             <span class="kw">let</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_mut</span>();
             <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">inner</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">inner</span>.<span class="ident">as_mut</span>().<span class="ident">unwrap</span>().<span class="ident">borrow_mut</span>();
@@ -1318,9 +1317,9 @@
             }
             <span class="ident">inner</span>.<span class="ident">poll</span>(<span class="kw-2">&amp;</span><span class="ident">this</span>.<span class="ident">safety</span>, <span class="ident">cx</span>)
         } <span class="kw">else</span> <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">safety</span>.<span class="ident">is_clean</span>() {
-            <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">NotConsumed</span>)))
+            <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">MultipartError::NotConsumed</span>)))
         } <span class="kw">else</span> {
-            <span class="ident">Poll</span>::<span class="ident">Pending</span>
+            <span class="ident">Poll::Pending</span>
         }
     }
 }
@@ -1330,32 +1329,32 @@
         <span class="kw">match</span> <span class="ident">payload</span>.<span class="ident">read_until</span>(<span class="string">b&quot;\r\n\r\n&quot;</span>)<span class="question-mark">?</span> {
             <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">if</span> <span class="ident">payload</span>.<span class="ident">eof</span> {
-                    <span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">Incomplete</span>)
+                    <span class="prelude-val">Err</span>(<span class="ident">MultipartError::Incomplete</span>)
                 } <span class="kw">else</span> {
                     <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
                 }
             }
             <span class="prelude-val">Some</span>(<span class="ident">bytes</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hdrs</span> <span class="op">=</span> [<span class="ident">httparse</span>::<span class="ident">EMPTY_HEADER</span>; <span class="ident">MAX_HEADERS</span>];
-                <span class="kw">match</span> <span class="ident">httparse</span>::<span class="ident">parse_headers</span>(<span class="kw-2">&amp;</span><span class="ident">bytes</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">hdrs</span>) {
-                    <span class="prelude-val">Ok</span>(<span class="ident">httparse</span>::<span class="ident">Status</span>::<span class="ident">Complete</span>((<span class="kw">_</span>, <span class="ident">hdrs</span>))) <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hdrs</span> <span class="op">=</span> [<span class="ident">httparse::EMPTY_HEADER</span>; <span class="ident">MAX_HEADERS</span>];
+                <span class="kw">match</span> <span class="ident">httparse::parse_headers</span>(<span class="kw-2">&amp;</span><span class="ident">bytes</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">hdrs</span>) {
+                    <span class="prelude-val">Ok</span>(<span class="ident">httparse::Status::Complete</span>((<span class="kw">_</span>, <span class="ident">hdrs</span>))) <span class="op">=</span><span class="op">&gt;</span> {
                         <span class="comment">// convert headers</span>
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">headers</span> <span class="op">=</span> <span class="ident">HeaderMap</span>::<span class="ident">with_capacity</span>(<span class="ident">hdrs</span>.<span class="ident">len</span>());
+                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">headers</span> <span class="op">=</span> <span class="ident">HeaderMap::with_capacity</span>(<span class="ident">hdrs</span>.<span class="ident">len</span>());
                         <span class="kw">for</span> <span class="ident">h</span> <span class="kw">in</span> <span class="ident">hdrs</span> {
-                            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">name</span>) <span class="op">=</span> <span class="ident">HeaderName</span>::<span class="ident">try_from</span>(<span class="ident">h</span>.<span class="ident">name</span>) {
-                                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">value</span>) <span class="op">=</span> <span class="ident">HeaderValue</span>::<span class="ident">try_from</span>(<span class="ident">h</span>.<span class="ident">value</span>) {
+                            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">name</span>) <span class="op">=</span> <span class="ident">HeaderName::try_from</span>(<span class="ident">h</span>.<span class="ident">name</span>) {
+                                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">value</span>) <span class="op">=</span> <span class="ident">HeaderValue::try_from</span>(<span class="ident">h</span>.<span class="ident">value</span>) {
                                     <span class="ident">headers</span>.<span class="ident">append</span>(<span class="ident">name</span>, <span class="ident">value</span>);
                                 } <span class="kw">else</span> {
-                                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ParseError</span>::<span class="ident">Header</span>.<span class="ident">into</span>());
+                                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ParseError::Header</span>.<span class="ident">into</span>());
                                 }
                             } <span class="kw">else</span> {
-                                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ParseError</span>::<span class="ident">Header</span>.<span class="ident">into</span>());
+                                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ParseError::Header</span>.<span class="ident">into</span>());
                             }
                         }
                         <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">headers</span>))
                     }
-                    <span class="prelude-val">Ok</span>(<span class="ident">httparse</span>::<span class="ident">Status</span>::<span class="ident">Partial</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Err</span>(<span class="ident">ParseError</span>::<span class="ident">Header</span>.<span class="ident">into</span>()),
-                    <span class="prelude-val">Err</span>(<span class="ident">err</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Err</span>(<span class="ident">ParseError</span>::<span class="ident">from</span>(<span class="ident">err</span>).<span class="ident">into</span>()),
+                    <span class="prelude-val">Ok</span>(<span class="ident">httparse::Status::Partial</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Err</span>(<span class="ident">ParseError::Header</span>.<span class="ident">into</span>()),
+                    <span class="prelude-val">Err</span>(<span class="ident">err</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Err</span>(<span class="ident">ParseError::from</span>(<span class="ident">err</span>).<span class="ident">into</span>()),
                 }
             }
         }
@@ -1379,7 +1378,7 @@
                     <span class="op">|</span><span class="op">|</span> <span class="kw-2">&amp;</span><span class="ident">chunk</span>[..<span class="number">2</span>] <span class="op">!</span><span class="op">=</span> <span class="string">b&quot;--&quot;</span>
                     <span class="op">|</span><span class="op">|</span> <span class="kw-2">&amp;</span><span class="ident">chunk</span>[<span class="number">2</span>..<span class="ident">boundary</span>.<span class="ident">len</span>() <span class="op">+</span> <span class="number">2</span>] <span class="op">!</span><span class="op">=</span> <span class="ident">boundary</span>.<span class="ident">as_bytes</span>()
                 {
-                    <span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">Boundary</span>)
+                    <span class="prelude-val">Err</span>(<span class="ident">MultipartError::Boundary</span>)
                 } <span class="kw">else</span> <span class="kw">if</span> <span class="kw-2">&amp;</span><span class="ident">chunk</span>[<span class="ident">boundary</span>.<span class="ident">len</span>() <span class="op">+</span> <span class="number">2</span>..] <span class="op">=</span><span class="op">=</span> <span class="string">b&quot;\r\n&quot;</span> {
                     <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="bool-val">false</span>))
                 } <span class="kw">else</span> <span class="kw">if</span> <span class="kw-2">&amp;</span><span class="ident">chunk</span>[<span class="ident">boundary</span>.<span class="ident">len</span>() <span class="op">+</span> <span class="number">2</span>..<span class="ident">boundary</span>.<span class="ident">len</span>() <span class="op">+</span> <span class="number">4</span>] <span class="op">=</span><span class="op">=</span> <span class="string">b&quot;--&quot;</span>
@@ -1388,7 +1387,7 @@
                 {
                     <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="bool-val">true</span>))
                 } <span class="kw">else</span> {
-                    <span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">Boundary</span>)
+                    <span class="prelude-val">Err</span>(<span class="ident">MultipartError::Boundary</span>)
                 }
             }
         }
@@ -1403,7 +1402,7 @@
             <span class="kw">match</span> <span class="ident">payload</span>.<span class="ident">readline</span>()<span class="question-mark">?</span> {
                 <span class="prelude-val">Some</span>(<span class="ident">chunk</span>) <span class="op">=</span><span class="op">&gt;</span> {
                     <span class="kw">if</span> <span class="ident">chunk</span>.<span class="ident">is_empty</span>() {
-                        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">Boundary</span>);
+                        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">MultipartError::Boundary</span>);
                     }
                     <span class="kw">if</span> <span class="ident">chunk</span>.<span class="ident">len</span>() <span class="op">&lt;</span> <span class="ident">boundary</span>.<span class="ident">len</span>() {
                         <span class="kw">continue</span>;
@@ -1426,7 +1425,7 @@
                 }
                 <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {
                     <span class="kw">return</span> <span class="kw">if</span> <span class="ident">payload</span>.<span class="ident">eof</span> {
-                        <span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">Incomplete</span>)
+                        <span class="prelude-val">Err</span>(<span class="ident">MultipartError::Incomplete</span>)
                     } <span class="kw">else</span> {
                         <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
                     };
@@ -1441,8 +1440,8 @@
         <span class="ident">safety</span>: <span class="kw-2">&amp;</span><span class="ident">Safety</span>,
         <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Field</span>, <span class="ident">MultipartError</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span><span class="op">=</span> <span class="ident">InnerState</span>::<span class="ident">Eof</span> {
-            <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">None</span>)
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span><span class="op">=</span> <span class="ident">InnerState::Eof</span> {
+            <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>)
         } <span class="kw">else</span> {
             <span class="comment">// release field</span>
             <span class="kw">loop</span> {
@@ -1450,20 +1449,20 @@
                 <span class="comment">// before switching to next</span>
                 <span class="kw">if</span> <span class="ident">safety</span>.<span class="ident">current</span>() {
                     <span class="kw">let</span> <span class="ident">stop</span> <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span>.<span class="ident">item</span> {
-                        <span class="ident">InnerMultipartItem</span>::<span class="ident">Field</span>(<span class="kw-2">ref</span> <span class="kw-2">mut</span> <span class="ident">field</span>) <span class="op">=</span><span class="op">&gt;</span> {
+                        <span class="ident">InnerMultipartItem::Field</span>(<span class="kw-2">ref</span> <span class="kw-2">mut</span> <span class="ident">field</span>) <span class="op">=</span><span class="op">&gt;</span> {
                             <span class="kw">match</span> <span class="ident">field</span>.<span class="ident">borrow_mut</span>().<span class="ident">poll</span>(<span class="ident">safety</span>) {
-                                <span class="ident">Poll</span>::<span class="ident">Pending</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Pending</span>,
-                                <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="kw">_</span>))) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">continue</span>,
-                                <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>))) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>))),
-                                <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">None</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="bool-val">true</span>,
+                                <span class="ident">Poll::Pending</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">Poll::Pending</span>,
+                                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="kw">_</span>))) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">continue</span>,
+                                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>))) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>))),
+                                <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="bool-val">true</span>,
                             }
                         }
-                        <span class="ident">InnerMultipartItem</span>::<span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="bool-val">false</span>,
+                        <span class="ident">InnerMultipartItem::None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="bool-val">false</span>,
                     };
                     <span class="kw">if</span> <span class="ident">stop</span> {
-                        <span class="self">self</span>.<span class="ident">item</span> <span class="op">=</span> <span class="ident">InnerMultipartItem</span>::<span class="prelude-val">None</span>;
+                        <span class="self">self</span>.<span class="ident">item</span> <span class="op">=</span> <span class="ident">InnerMultipartItem::None</span>;
                     }
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="ident">InnerMultipartItem</span>::<span class="prelude-val">None</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">item</span> {
+                    <span class="kw">if</span> <span class="kw">let</span> <span class="ident">InnerMultipartItem::None</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">item</span> {
                         <span class="kw">break</span>;
                     }
                 }
@@ -1472,32 +1471,32 @@
             <span class="kw">let</span> <span class="ident">headers</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">payload</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">payload</span>.<span class="ident">get_mut</span>(<span class="ident">safety</span>) {
                 <span class="kw">match</span> <span class="self">self</span>.<span class="ident">state</span> {
                     <span class="comment">// read until first boundary</span>
-                    <span class="ident">InnerState</span>::<span class="ident">FirstBoundary</span> <span class="op">=</span><span class="op">&gt;</span> {
-                        <span class="kw">match</span> <span class="ident">InnerMultipart</span>::<span class="ident">skip_until_boundary</span>(
+                    <span class="ident">InnerState::FirstBoundary</span> <span class="op">=</span><span class="op">&gt;</span> {
+                        <span class="kw">match</span> <span class="ident">InnerMultipart::skip_until_boundary</span>(
                             <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="kw-2">*</span><span class="ident">payload</span>,
                             <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">boundary</span>,
                         )<span class="question-mark">?</span> {
                             <span class="prelude-val">Some</span>(<span class="ident">eof</span>) <span class="op">=</span><span class="op">&gt;</span> {
                                 <span class="kw">if</span> <span class="ident">eof</span> {
-                                    <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span> <span class="ident">InnerState</span>::<span class="ident">Eof</span>;
-                                    <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">None</span>);
+                                    <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span> <span class="ident">InnerState::Eof</span>;
+                                    <span class="kw">return</span> <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>);
                                 } <span class="kw">else</span> {
-                                    <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span> <span class="ident">InnerState</span>::<span class="ident">Headers</span>;
+                                    <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span> <span class="ident">InnerState::Headers</span>;
                                 }
                             }
-                            <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Pending</span>,
+                            <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">Poll::Pending</span>,
                         }
                     }
                     <span class="comment">// read boundary</span>
-                    <span class="ident">InnerState</span>::<span class="ident">Boundary</span> <span class="op">=</span><span class="op">&gt;</span> {
-                        <span class="kw">match</span> <span class="ident">InnerMultipart</span>::<span class="ident">read_boundary</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="kw-2">*</span><span class="ident">payload</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">boundary</span>)<span class="question-mark">?</span> {
-                            <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Pending</span>,
+                    <span class="ident">InnerState::Boundary</span> <span class="op">=</span><span class="op">&gt;</span> {
+                        <span class="kw">match</span> <span class="ident">InnerMultipart::read_boundary</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="kw-2">*</span><span class="ident">payload</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">boundary</span>)<span class="question-mark">?</span> {
+                            <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">Poll::Pending</span>,
                             <span class="prelude-val">Some</span>(<span class="ident">eof</span>) <span class="op">=</span><span class="op">&gt;</span> {
                                 <span class="kw">if</span> <span class="ident">eof</span> {
-                                    <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span> <span class="ident">InnerState</span>::<span class="ident">Eof</span>;
-                                    <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">None</span>);
+                                    <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span> <span class="ident">InnerState::Eof</span>;
+                                    <span class="kw">return</span> <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>);
                                 } <span class="kw">else</span> {
-                                    <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span> <span class="ident">InnerState</span>::<span class="ident">Headers</span>;
+                                    <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span> <span class="ident">InnerState::Headers</span>;
                                 }
                             }
                         }
@@ -1506,45 +1505,45 @@
                 }
 
                 <span class="comment">// read field headers for next field</span>
-                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span><span class="op">=</span> <span class="ident">InnerState</span>::<span class="ident">Headers</span> {
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">headers</span>) <span class="op">=</span> <span class="ident">InnerMultipart</span>::<span class="ident">read_headers</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="kw-2">*</span><span class="ident">payload</span>)<span class="question-mark">?</span> {
-                        <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span> <span class="ident">InnerState</span>::<span class="ident">Boundary</span>;
+                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span><span class="op">=</span> <span class="ident">InnerState::Headers</span> {
+                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">headers</span>) <span class="op">=</span> <span class="ident">InnerMultipart::read_headers</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="kw-2">*</span><span class="ident">payload</span>)<span class="question-mark">?</span> {
+                        <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span> <span class="ident">InnerState::Boundary</span>;
                         <span class="ident">headers</span>
                     } <span class="kw">else</span> {
-                        <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Pending</span>;
+                        <span class="kw">return</span> <span class="ident">Poll::Pending</span>;
                     }
                 } <span class="kw">else</span> {
-                    <span class="macro">unreachable</span><span class="macro">!</span>()
+                    <span class="macro">unreachable!</span>()
                 }
             } <span class="kw">else</span> {
-                <span class="ident">log</span>::<span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;NotReady: field is in flight&quot;</span>);
-                <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Pending</span>;
+                <span class="macro">log::debug!</span>(<span class="string">&quot;NotReady: field is in flight&quot;</span>);
+                <span class="kw">return</span> <span class="ident">Poll::Pending</span>;
             };
 
             <span class="comment">// content type</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">mt</span> <span class="op">=</span> <span class="ident">mime</span>::<span class="ident">APPLICATION_OCTET_STREAM</span>;
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">content_type</span>) <span class="op">=</span> <span class="ident">headers</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">header</span>::<span class="ident">CONTENT_TYPE</span>) {
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">mt</span> <span class="op">=</span> <span class="ident">mime::APPLICATION_OCTET_STREAM</span>;
+            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">content_type</span>) <span class="op">=</span> <span class="ident">headers</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">header::CONTENT_TYPE</span>) {
                 <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">content_type</span>) <span class="op">=</span> <span class="ident">content_type</span>.<span class="ident">to_str</span>() {
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">ct</span>) <span class="op">=</span> <span class="ident">content_type</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">mime</span>::<span class="ident">Mime</span><span class="op">&gt;</span>() {
+                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">ct</span>) <span class="op">=</span> <span class="ident">content_type</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">mime::Mime</span><span class="op">&gt;</span>() {
                         <span class="ident">mt</span> <span class="op">=</span> <span class="ident">ct</span>;
                     }
                 }
             }
 
-            <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span> <span class="ident">InnerState</span>::<span class="ident">Boundary</span>;
+            <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span> <span class="ident">InnerState::Boundary</span>;
 
             <span class="comment">// nested multipart stream</span>
-            <span class="kw">if</span> <span class="ident">mt</span>.<span class="ident">type_</span>() <span class="op">=</span><span class="op">=</span> <span class="ident">mime</span>::<span class="ident">MULTIPART</span> {
-                <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">Nested</span>)))
+            <span class="kw">if</span> <span class="ident">mt</span>.<span class="ident">type_</span>() <span class="op">=</span><span class="op">=</span> <span class="ident">mime::MULTIPART</span> {
+                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">MultipartError::Nested</span>)))
             } <span class="kw">else</span> {
-                <span class="kw">let</span> <span class="ident">field</span> <span class="op">=</span> <span class="ident">Rc</span>::<span class="ident">new</span>(<span class="ident">RefCell</span>::<span class="ident">new</span>(<span class="ident">InnerField</span>::<span class="ident">new</span>(
+                <span class="kw">let</span> <span class="ident">field</span> <span class="op">=</span> <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">InnerField::new</span>(
                     <span class="self">self</span>.<span class="ident">payload</span>.<span class="ident">clone</span>(),
                     <span class="self">self</span>.<span class="ident">boundary</span>.<span class="ident">clone</span>(),
                     <span class="kw-2">&amp;</span><span class="ident">headers</span>,
                 )<span class="question-mark">?</span>));
-                <span class="self">self</span>.<span class="ident">item</span> <span class="op">=</span> <span class="ident">InnerMultipartItem</span>::<span class="ident">Field</span>(<span class="ident">Rc</span>::<span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="ident">field</span>));
+                <span class="self">self</span>.<span class="ident">item</span> <span class="op">=</span> <span class="ident">InnerMultipartItem::Field</span>(<span class="ident">Rc::clone</span>(<span class="kw-2">&amp;</span><span class="ident">field</span>));
 
-                <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">Field</span>::<span class="ident">new</span>(<span class="ident">safety</span>.<span class="ident">clone</span>(<span class="ident">cx</span>), <span class="ident">headers</span>, <span class="ident">mt</span>, <span class="ident">field</span>))))
+                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">Field::new</span>(<span class="ident">safety</span>.<span class="ident">clone</span>(<span class="ident">cx</span>), <span class="ident">headers</span>, <span class="ident">mt</span>, <span class="ident">field</span>))))
             }
         }
     }
@@ -1553,13 +1552,13 @@
 <span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">InnerMultipart</span> {
     <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
         <span class="comment">// InnerMultipartItem::Field has to be dropped first because of Safety.</span>
-        <span class="self">self</span>.<span class="ident">item</span> <span class="op">=</span> <span class="ident">InnerMultipartItem</span>::<span class="prelude-val">None</span>;
+        <span class="self">self</span>.<span class="ident">item</span> <span class="op">=</span> <span class="ident">InnerMultipartItem::None</span>;
     }
 }
 
 <span class="doccomment">/// A single field in a multipart stream</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Field</span> {
-    <span class="ident">ct</span>: <span class="ident">mime</span>::<span class="ident">Mime</span>,
+    <span class="ident">ct</span>: <span class="ident">mime::Mime</span>,
     <span class="ident">headers</span>: <span class="ident">HeaderMap</span>,
     <span class="ident">inner</span>: <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">RefCell</span><span class="op">&lt;</span><span class="ident">InnerField</span><span class="op">&gt;</span><span class="op">&gt;</span>,
     <span class="ident">safety</span>: <span class="ident">Safety</span>,
@@ -1569,7 +1568,7 @@
     <span class="kw">fn</span> <span class="ident">new</span>(
         <span class="ident">safety</span>: <span class="ident">Safety</span>,
         <span class="ident">headers</span>: <span class="ident">HeaderMap</span>,
-        <span class="ident">ct</span>: <span class="ident">mime</span>::<span class="ident">Mime</span>,
+        <span class="ident">ct</span>: <span class="ident">mime::Mime</span>,
         <span class="ident">inner</span>: <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">RefCell</span><span class="op">&lt;</span><span class="ident">InnerField</span><span class="op">&gt;</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="ident">Field</span> {
@@ -1586,7 +1585,7 @@
     }
 
     <span class="doccomment">/// Get the content type of the field</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">content_type</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">mime</span>::<span class="ident">Mime</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">content_type</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="ident">mime::Mime</span> {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">ct</span>
     }
 
@@ -1594,8 +1593,8 @@
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">content_disposition</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">ContentDisposition</span><span class="op">&gt;</span> {
         <span class="comment">// RFC 7578: &#39;Each part MUST contain a Content-Disposition header field</span>
         <span class="comment">// where the disposition type is &quot;form-data&quot;.&#39;</span>
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">content_disposition</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">headers</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">header</span>::<span class="ident">CONTENT_DISPOSITION</span>) {
-            <span class="ident">ContentDisposition</span>::<span class="ident">from_raw</span>(<span class="ident">content_disposition</span>).<span class="ident">ok</span>()
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">content_disposition</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">headers</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">header::CONTENT_DISPOSITION</span>) {
+            <span class="ident">ContentDisposition::from_raw</span>(<span class="ident">content_disposition</span>).<span class="ident">ok</span>()
         } <span class="kw">else</span> {
             <span class="prelude-val">None</span>
         }
@@ -1605,7 +1604,7 @@
 <span class="kw">impl</span> <span class="ident">Stream</span> <span class="kw">for</span> <span class="ident">Field</span> {
     <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Bytes</span>, <span class="ident">MultipartError</span><span class="op">&gt;</span>;
 
-    <span class="kw">fn</span> <span class="ident">poll_next</span>(<span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Item</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">poll_next</span>(<span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span><span class="ident">::Item</span><span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">safety</span>.<span class="ident">current</span>() {
             <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">borrow_mut</span>();
             <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">payload</span>) <span class="op">=</span> <span class="ident">inner</span>.<span class="ident">payload</span>.<span class="ident">as_ref</span>().<span class="ident">unwrap</span>().<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">safety</span>) {
@@ -1613,20 +1612,20 @@
             }
             <span class="ident">inner</span>.<span class="ident">poll</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">safety</span>)
         } <span class="kw">else</span> <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">safety</span>.<span class="ident">is_clean</span>() {
-            <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">NotConsumed</span>)))
+            <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">MultipartError::NotConsumed</span>)))
         } <span class="kw">else</span> {
-            <span class="ident">Poll</span>::<span class="ident">Pending</span>
+            <span class="ident">Poll::Pending</span>
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">fmt</span>::<span class="ident">Debug</span> <span class="kw">for</span> <span class="ident">Field</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt</span>::<span class="ident">Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">fmt</span>::<span class="prelude-ty">Result</span> {
-        <span class="macro">writeln</span><span class="macro">!</span>(<span class="ident">f</span>, <span class="string">&quot;\nField: {}&quot;</span>, <span class="self">self</span>.<span class="ident">ct</span>)<span class="question-mark">?</span>;
-        <span class="macro">writeln</span><span class="macro">!</span>(<span class="ident">f</span>, <span class="string">&quot;  boundary: {}&quot;</span>, <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">borrow</span>().<span class="ident">boundary</span>)<span class="question-mark">?</span>;
-        <span class="macro">writeln</span><span class="macro">!</span>(<span class="ident">f</span>, <span class="string">&quot;  headers:&quot;</span>)<span class="question-mark">?</span>;
+<span class="kw">impl</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">Field</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">fmt::Result</span> {
+        <span class="macro">writeln!</span>(<span class="ident">f</span>, <span class="string">&quot;\nField: {}&quot;</span>, <span class="self">self</span>.<span class="ident">ct</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="ident">f</span>, <span class="string">&quot;  boundary: {}&quot;</span>, <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">borrow</span>().<span class="ident">boundary</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="ident">f</span>, <span class="string">&quot;  headers:&quot;</span>)<span class="question-mark">?</span>;
         <span class="kw">for</span> (<span class="ident">key</span>, <span class="ident">val</span>) <span class="kw">in</span> <span class="self">self</span>.<span class="ident">headers</span>.<span class="ident">iter</span>() {
-            <span class="macro">writeln</span><span class="macro">!</span>(<span class="ident">f</span>, <span class="string">&quot;    {:?}: {:?}&quot;</span>, <span class="ident">key</span>, <span class="ident">val</span>)<span class="question-mark">?</span>;
+            <span class="macro">writeln!</span>(<span class="ident">f</span>, <span class="string">&quot;    {:?}: {:?}&quot;</span>, <span class="ident">key</span>, <span class="ident">val</span>)<span class="question-mark">?</span>;
         }
         <span class="prelude-val">Ok</span>(())
     }
@@ -1645,15 +1644,15 @@
         <span class="ident">boundary</span>: <span class="ident">String</span>,
         <span class="ident">headers</span>: <span class="kw-2">&amp;</span><span class="ident">HeaderMap</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">InnerField</span>, <span class="ident">PayloadError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">len</span>) <span class="op">=</span> <span class="ident">headers</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">header</span>::<span class="ident">CONTENT_LENGTH</span>) {
+        <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">len</span>) <span class="op">=</span> <span class="ident">headers</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">header::CONTENT_LENGTH</span>) {
             <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">s</span>) <span class="op">=</span> <span class="ident">len</span>.<span class="ident">to_str</span>() {
                 <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">len</span>) <span class="op">=</span> <span class="ident">s</span>.<span class="ident">parse</span>::<span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>() {
                     <span class="prelude-val">Some</span>(<span class="ident">len</span>)
                 } <span class="kw">else</span> {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">PayloadError</span>::<span class="ident">Incomplete</span>(<span class="prelude-val">None</span>));
+                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">PayloadError::Incomplete</span>(<span class="prelude-val">None</span>));
                 }
             } <span class="kw">else</span> {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">PayloadError</span>::<span class="ident">Incomplete</span>(<span class="prelude-val">None</span>));
+                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">PayloadError::Incomplete</span>(<span class="prelude-val">None</span>));
             }
         } <span class="kw">else</span> {
             <span class="prelude-val">None</span>
@@ -1674,23 +1673,23 @@
         <span class="ident">size</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">u64</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Bytes</span>, <span class="ident">MultipartError</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="kw-2">*</span><span class="ident">size</span> <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
-            <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">None</span>)
+            <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>)
         } <span class="kw">else</span> {
             <span class="kw">match</span> <span class="ident">payload</span>.<span class="ident">read_max</span>(<span class="kw-2">*</span><span class="ident">size</span>)<span class="question-mark">?</span> {
                 <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">chunk</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">cmp</span>::<span class="ident">min</span>(<span class="ident">chunk</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u64</span>, <span class="kw-2">*</span><span class="ident">size</span>);
+                    <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">cmp::min</span>(<span class="ident">chunk</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u64</span>, <span class="kw-2">*</span><span class="ident">size</span>);
                     <span class="kw-2">*</span><span class="ident">size</span> <span class="op">-</span><span class="op">=</span> <span class="ident">len</span>;
                     <span class="kw">let</span> <span class="ident">ch</span> <span class="op">=</span> <span class="ident">chunk</span>.<span class="ident">split_to</span>(<span class="ident">len</span> <span class="kw">as</span> <span class="ident">usize</span>);
                     <span class="kw">if</span> <span class="op">!</span><span class="ident">chunk</span>.<span class="ident">is_empty</span>() {
                         <span class="ident">payload</span>.<span class="ident">unprocessed</span>(<span class="ident">chunk</span>);
                     }
-                    <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">ch</span>)))
+                    <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">ch</span>)))
                 }
                 <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {
                     <span class="kw">if</span> <span class="ident">payload</span>.<span class="ident">eof</span> <span class="op">&amp;&amp;</span> (<span class="kw-2">*</span><span class="ident">size</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span>) {
-                        <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">Incomplete</span>)))
+                        <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">MultipartError::Incomplete</span>)))
                     } <span class="kw">else</span> {
-                        <span class="ident">Poll</span>::<span class="ident">Pending</span>
+                        <span class="ident">Poll::Pending</span>
                     }
                 }
             }
@@ -1708,9 +1707,9 @@
         <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">len</span>();
         <span class="kw">if</span> <span class="ident">len</span> <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
             <span class="kw">return</span> <span class="kw">if</span> <span class="ident">payload</span>.<span class="ident">eof</span> {
-                <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">Incomplete</span>)))
+                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">MultipartError::Incomplete</span>)))
             } <span class="kw">else</span> {
-                <span class="ident">Poll</span>::<span class="ident">Pending</span>
+                <span class="ident">Poll::Pending</span>
             };
         }
 
@@ -1727,24 +1726,24 @@
             <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">b_len</span>) <span class="op">=</span> <span class="ident">b_len</span> {
                 <span class="kw">let</span> <span class="ident">b_size</span> <span class="op">=</span> <span class="ident">boundary</span>.<span class="ident">len</span>() <span class="op">+</span> <span class="ident">b_len</span>;
                 <span class="kw">if</span> <span class="ident">len</span> <span class="op">&lt;</span> <span class="ident">b_size</span> {
-                    <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Pending</span>;
+                    <span class="kw">return</span> <span class="ident">Poll::Pending</span>;
                 } <span class="kw">else</span> <span class="kw">if</span> <span class="kw-2">&amp;</span><span class="ident">payload</span>.<span class="ident">buf</span>[<span class="ident">b_len</span>..<span class="ident">b_size</span>] <span class="op">=</span><span class="op">=</span> <span class="ident">boundary</span>.<span class="ident">as_bytes</span>() {
                     <span class="comment">// found boundary</span>
-                    <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">None</span>);
+                    <span class="kw">return</span> <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>);
                 }
             }
         }
 
         <span class="kw">loop</span> {
-            <span class="kw">return</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">idx</span>) <span class="op">=</span> <span class="ident">twoway</span>::<span class="ident">find_bytes</span>(<span class="kw-2">&amp;</span><span class="ident">payload</span>.<span class="ident">buf</span>[<span class="ident">pos</span>..], <span class="string">b&quot;\r&quot;</span>) {
+            <span class="kw">return</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">idx</span>) <span class="op">=</span> <span class="ident">twoway::find_bytes</span>(<span class="kw-2">&amp;</span><span class="ident">payload</span>.<span class="ident">buf</span>[<span class="ident">pos</span>..], <span class="string">b&quot;\r&quot;</span>) {
                 <span class="kw">let</span> <span class="ident">cur</span> <span class="op">=</span> <span class="ident">pos</span> <span class="op">+</span> <span class="ident">idx</span>;
 
                 <span class="comment">// check if we have enough data for boundary detection</span>
                 <span class="kw">if</span> <span class="ident">cur</span> <span class="op">+</span> <span class="number">4</span> <span class="op">&gt;</span> <span class="ident">len</span> {
                     <span class="kw">if</span> <span class="ident">cur</span> <span class="op">&gt;</span> <span class="number">0</span> {
-                        <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">split_to</span>(<span class="ident">cur</span>).<span class="ident">freeze</span>())))
+                        <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">split_to</span>(<span class="ident">cur</span>).<span class="ident">freeze</span>())))
                     } <span class="kw">else</span> {
-                        <span class="ident">Poll</span>::<span class="ident">Pending</span>
+                        <span class="ident">Poll::Pending</span>
                     }
                 } <span class="kw">else</span> {
                     <span class="comment">// check boundary</span>
@@ -1755,7 +1754,7 @@
                     {
                         <span class="kw">if</span> <span class="ident">cur</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span> {
                             <span class="comment">// return buffer</span>
-                            <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">split_to</span>(<span class="ident">cur</span>).<span class="ident">freeze</span>())))
+                            <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">split_to</span>(<span class="ident">cur</span>).<span class="ident">freeze</span>())))
                         } <span class="kw">else</span> {
                             <span class="ident">pos</span> <span class="op">=</span> <span class="ident">cur</span> <span class="op">+</span> <span class="number">1</span>;
                             <span class="kw">continue</span>;
@@ -1767,49 +1766,49 @@
                     }
                 }
             } <span class="kw">else</span> {
-                <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">split</span>().<span class="ident">freeze</span>())))
+                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">split</span>().<span class="ident">freeze</span>())))
             };
         }
     }
 
     <span class="kw">fn</span> <span class="ident">poll</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">Safety</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Bytes</span>, <span class="ident">MultipartError</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">payload</span>.<span class="ident">is_none</span>() {
-            <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">None</span>);
+            <span class="kw">return</span> <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>);
         }
 
         <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">payload</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">payload</span>.<span class="ident">as_ref</span>().<span class="ident">unwrap</span>().<span class="ident">get_mut</span>(<span class="ident">s</span>) {
             <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">eof</span> {
                 <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">ref</span> <span class="kw-2">mut</span> <span class="ident">len</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">length</span> {
-                    <span class="ident">InnerField</span>::<span class="ident">read_len</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="kw-2">*</span><span class="ident">payload</span>, <span class="ident">len</span>)
+                    <span class="ident">InnerField::read_len</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="kw-2">*</span><span class="ident">payload</span>, <span class="ident">len</span>)
                 } <span class="kw">else</span> {
-                    <span class="ident">InnerField</span>::<span class="ident">read_stream</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="kw-2">*</span><span class="ident">payload</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">boundary</span>)
+                    <span class="ident">InnerField::read_stream</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="kw-2">*</span><span class="ident">payload</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">boundary</span>)
                 };
 
                 <span class="kw">match</span> <span class="ident">res</span> {
-                    <span class="ident">Poll</span>::<span class="ident">Pending</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Pending</span>,
-                    <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">bytes</span>))) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">bytes</span>))),
-                    <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>))) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>))),
-                    <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">None</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">eof</span> <span class="op">=</span> <span class="bool-val">true</span>,
+                    <span class="ident">Poll::Pending</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">Poll::Pending</span>,
+                    <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">bytes</span>))) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">bytes</span>))),
+                    <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>))) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>))),
+                    <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">eof</span> <span class="op">=</span> <span class="bool-val">true</span>,
                 }
             }
 
             <span class="kw">match</span> <span class="ident">payload</span>.<span class="ident">readline</span>() {
-                <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Poll</span>::<span class="ident">Pending</span>,
+                <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Poll::Pending</span>,
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">line</span>)) <span class="op">=</span><span class="op">&gt;</span> {
                     <span class="kw">if</span> <span class="ident">line</span>.<span class="ident">as_ref</span>() <span class="op">!</span><span class="op">=</span> <span class="string">b&quot;\r\n&quot;</span> {
-                        <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(
+                        <span class="macro">log::warn!</span>(
                             <span class="string">&quot;multipart field did not read all the data or it is malformed&quot;</span>
                         );
                     }
-                    <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">None</span>)
+                    <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>)
                 }
-                <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>))),
+                <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>))),
             }
         } <span class="kw">else</span> {
-            <span class="ident">Poll</span>::<span class="ident">Pending</span>
+            <span class="ident">Poll::Pending</span>
         };
 
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">None</span>) <span class="op">=</span> <span class="ident">result</span> {
+        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>) <span class="op">=</span> <span class="ident">result</span> {
             <span class="self">self</span>.<span class="ident">payload</span>.<span class="ident">take</span>();
         }
         <span class="ident">result</span>
@@ -1823,7 +1822,7 @@
 <span class="kw">impl</span> <span class="ident">PayloadRef</span> {
     <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">payload</span>: <span class="ident">PayloadBuffer</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">PayloadRef</span> {
         <span class="ident">PayloadRef</span> {
-            <span class="ident">payload</span>: <span class="ident">Rc</span>::<span class="ident">new</span>(<span class="ident">payload</span>.<span class="ident">into</span>()),
+            <span class="ident">payload</span>: <span class="ident">Rc::new</span>(<span class="ident">payload</span>.<span class="ident">into</span>()),
         }
     }
 
@@ -1842,7 +1841,7 @@
 <span class="kw">impl</span> <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">PayloadRef</span> {
     <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">PayloadRef</span> {
         <span class="ident">PayloadRef</span> {
-            <span class="ident">payload</span>: <span class="ident">Rc</span>::<span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">payload</span>),
+            <span class="ident">payload</span>: <span class="ident">Rc::clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">payload</span>),
         }
     }
 }
@@ -1860,17 +1859,17 @@
 
 <span class="kw">impl</span> <span class="ident">Safety</span> {
     <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Safety</span> {
-        <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">Rc</span>::<span class="ident">new</span>(<span class="ident">PhantomData</span>);
+        <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">Rc::new</span>(<span class="ident">PhantomData</span>);
         <span class="ident">Safety</span> {
-            <span class="ident">task</span>: <span class="ident">LocalWaker</span>::<span class="ident">new</span>(),
-            <span class="ident">level</span>: <span class="ident">Rc</span>::<span class="ident">strong_count</span>(<span class="kw-2">&amp;</span><span class="ident">payload</span>),
-            <span class="ident">clean</span>: <span class="ident">Rc</span>::<span class="ident">new</span>(<span class="ident">Cell</span>::<span class="ident">new</span>(<span class="bool-val">true</span>)),
+            <span class="ident">task</span>: <span class="ident">LocalWaker::new</span>(),
+            <span class="ident">level</span>: <span class="ident">Rc::strong_count</span>(<span class="kw-2">&amp;</span><span class="ident">payload</span>),
+            <span class="ident">clean</span>: <span class="ident">Rc::new</span>(<span class="ident">Cell::new</span>(<span class="bool-val">true</span>)),
             <span class="ident">payload</span>,
         }
     }
 
     <span class="kw">fn</span> <span class="ident">current</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
-        <span class="ident">Rc</span>::<span class="ident">strong_count</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">payload</span>) <span class="op">=</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">level</span> <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">clean</span>.<span class="ident">get</span>()
+        <span class="ident">Rc::strong_count</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">payload</span>) <span class="op">=</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">level</span> <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">clean</span>.<span class="ident">get</span>()
     }
 
     <span class="kw">fn</span> <span class="ident">is_clean</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
@@ -1878,10 +1877,10 @@
     }
 
     <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Safety</span> {
-        <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">Rc</span>::<span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">payload</span>);
+        <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">Rc::clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">payload</span>);
         <span class="kw">let</span> <span class="ident">s</span> <span class="op">=</span> <span class="ident">Safety</span> {
-            <span class="ident">task</span>: <span class="ident">LocalWaker</span>::<span class="ident">new</span>(),
-            <span class="ident">level</span>: <span class="ident">Rc</span>::<span class="ident">strong_count</span>(<span class="kw-2">&amp;</span><span class="ident">payload</span>),
+            <span class="ident">task</span>: <span class="ident">LocalWaker::new</span>(),
+            <span class="ident">level</span>: <span class="ident">Rc::strong_count</span>(<span class="kw-2">&amp;</span><span class="ident">payload</span>),
             <span class="ident">clean</span>: <span class="self">self</span>.<span class="ident">clean</span>.<span class="ident">clone</span>(),
             <span class="ident">payload</span>,
         };
@@ -1893,7 +1892,7 @@
 <span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Safety</span> {
     <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
         <span class="comment">// parent task is dead</span>
-        <span class="kw">if</span> <span class="ident">Rc</span>::<span class="ident">strong_count</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">payload</span>) <span class="op">!</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">level</span> {
+        <span class="kw">if</span> <span class="ident">Rc::strong_count</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">payload</span>) <span class="op">!</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">level</span> {
             <span class="self">self</span>.<span class="ident">clean</span>.<span class="ident">set</span>(<span class="bool-val">true</span>);
         }
         <span class="self">self</span>.<span class="ident">task</span>.<span class="ident">wake</span>();
@@ -1915,21 +1914,21 @@
     {
         <span class="ident">PayloadBuffer</span> {
             <span class="ident">eof</span>: <span class="bool-val">false</span>,
-            <span class="ident">buf</span>: <span class="ident">BytesMut</span>::<span class="ident">new</span>(),
+            <span class="ident">buf</span>: <span class="ident">BytesMut::new</span>(),
             <span class="ident">stream</span>: <span class="ident">stream</span>.<span class="ident">boxed_local</span>(),
         }
     }
 
     <span class="kw">fn</span> <span class="ident">poll_stream</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">PayloadError</span><span class="op">&gt;</span> {
         <span class="kw">loop</span> {
-            <span class="kw">match</span> <span class="ident">Pin</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">stream</span>).<span class="ident">poll_next</span>(<span class="ident">cx</span>) {
-                <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">data</span>))) <span class="op">=</span><span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">extend_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">data</span>),
-                <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>))) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>),
-                <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">None</span>) <span class="op">=</span><span class="op">&gt;</span> {
+            <span class="kw">match</span> <span class="ident">Pin::new</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">stream</span>).<span class="ident">poll_next</span>(<span class="ident">cx</span>) {
+                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">data</span>))) <span class="op">=</span><span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">extend_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">data</span>),
+                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>))) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">e</span>),
+                <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>) <span class="op">=</span><span class="op">&gt;</span> {
                     <span class="self">self</span>.<span class="ident">eof</span> <span class="op">=</span> <span class="bool-val">true</span>;
                     <span class="kw">return</span> <span class="prelude-val">Ok</span>(());
                 }
-                <span class="ident">Poll</span>::<span class="ident">Pending</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="prelude-val">Ok</span>(()),
+                <span class="ident">Poll::Pending</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="prelude-val">Ok</span>(()),
             }
         }
     }
@@ -1946,10 +1945,10 @@
 
     <span class="kw">fn</span> <span class="ident">read_max</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">size</span>: <span class="ident">u64</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Bytes</span><span class="op">&gt;</span>, <span class="ident">MultipartError</span><span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">is_empty</span>() {
-            <span class="kw">let</span> <span class="ident">size</span> <span class="op">=</span> <span class="ident">std</span>::<span class="ident">cmp</span>::<span class="ident">min</span>(<span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u64</span>, <span class="ident">size</span>) <span class="kw">as</span> <span class="ident">usize</span>;
+            <span class="kw">let</span> <span class="ident">size</span> <span class="op">=</span> <span class="ident">std::cmp::min</span>(<span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u64</span>, <span class="ident">size</span>) <span class="kw">as</span> <span class="ident">usize</span>;
             <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">split_to</span>(<span class="ident">size</span>).<span class="ident">freeze</span>()))
         } <span class="kw">else</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">eof</span> {
-            <span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">Incomplete</span>)
+            <span class="prelude-val">Err</span>(<span class="ident">MultipartError::Incomplete</span>)
         } <span class="kw">else</span> {
             <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
         }
@@ -1957,11 +1956,11 @@
 
     <span class="doccomment">/// Read until specified ending</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_until</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">line</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Bytes</span><span class="op">&gt;</span>, <span class="ident">MultipartError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">twoway</span>::<span class="ident">find_bytes</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">buf</span>, <span class="ident">line</span>)
+        <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">twoway::find_bytes</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">buf</span>, <span class="ident">line</span>)
             .<span class="ident">map</span>(<span class="op">|</span><span class="ident">idx</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">split_to</span>(<span class="ident">idx</span> <span class="op">+</span> <span class="ident">line</span>.<span class="ident">len</span>()).<span class="ident">freeze</span>());
 
         <span class="kw">if</span> <span class="ident">res</span>.<span class="ident">is_none</span>() <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">eof</span> {
-            <span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">Incomplete</span>)
+            <span class="prelude-val">Err</span>(<span class="ident">MultipartError::Incomplete</span>)
         } <span class="kw">else</span> {
             <span class="prelude-val">Ok</span>(<span class="ident">res</span>)
         }
@@ -1975,15 +1974,15 @@
     <span class="doccomment">/// Read bytes until new line delimiter or eof</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">readline_or_eof</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Bytes</span><span class="op">&gt;</span>, <span class="ident">MultipartError</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">readline</span>() {
-            <span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">Incomplete</span>) <span class="kw">if</span> <span class="self">self</span>.<span class="ident">eof</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">split</span>().<span class="ident">freeze</span>())),
+            <span class="prelude-val">Err</span>(<span class="ident">MultipartError::Incomplete</span>) <span class="kw">if</span> <span class="self">self</span>.<span class="ident">eof</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">split</span>().<span class="ident">freeze</span>())),
             <span class="ident">line</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">line</span>,
         }
     }
 
     <span class="doccomment">/// Put unprocessed data back to the buffer</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">unprocessed</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">data</span>: <span class="ident">Bytes</span>) {
-        <span class="kw">let</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">BytesMut</span>::<span class="ident">from</span>(<span class="ident">data</span>.<span class="ident">as_ref</span>());
-        <span class="kw">let</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">std</span>::<span class="ident">mem</span>::<span class="ident">replace</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">buf</span>, <span class="ident">buf</span>);
+        <span class="kw">let</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">BytesMut::from</span>(<span class="ident">data</span>.<span class="ident">as_ref</span>());
+        <span class="kw">let</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">std::mem::replace</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>.<span class="ident">buf</span>, <span class="ident">buf</span>);
         <span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">extend_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">buf</span>);
     }
 }
@@ -1992,67 +1991,67 @@
 <span class="kw">mod</span> <span class="ident">tests</span> {
     <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
 
-    <span class="kw">use</span> <span class="ident">actix_http</span>::<span class="ident">h1</span>::<span class="ident">Payload</span>;
-    <span class="kw">use</span> <span class="ident">actix_web</span>::<span class="ident">http</span>::<span class="ident">header</span>::{<span class="ident">DispositionParam</span>, <span class="ident">DispositionType</span>};
-    <span class="kw">use</span> <span class="ident">actix_web</span>::<span class="ident">test</span>::<span class="ident">TestRequest</span>;
-    <span class="kw">use</span> <span class="ident">actix_web</span>::<span class="ident">FromRequest</span>;
-    <span class="kw">use</span> <span class="ident">bytes</span>::<span class="ident">Bytes</span>;
-    <span class="kw">use</span> <span class="ident">futures_util</span>::<span class="ident">future</span>::<span class="ident">lazy</span>;
-    <span class="kw">use</span> <span class="ident">tokio</span>::<span class="ident">sync</span>::<span class="ident">mpsc</span>;
-    <span class="kw">use</span> <span class="ident">tokio_stream</span>::<span class="ident">wrappers</span>::<span class="ident">UnboundedReceiverStream</span>;
+    <span class="kw">use</span> <span class="ident">actix_http::h1::Payload</span>;
+    <span class="kw">use</span> <span class="ident">actix_web::http::header</span>::{<span class="ident">DispositionParam</span>, <span class="ident">DispositionType</span>};
+    <span class="kw">use</span> <span class="ident">actix_web::test::TestRequest</span>;
+    <span class="kw">use</span> <span class="ident">actix_web::FromRequest</span>;
+    <span class="kw">use</span> <span class="ident">bytes::Bytes</span>;
+    <span class="kw">use</span> <span class="ident">futures_util::future::lazy</span>;
+    <span class="kw">use</span> <span class="ident">tokio::sync::mpsc</span>;
+    <span class="kw">use</span> <span class="ident">tokio_stream::wrappers::UnboundedReceiverStream</span>;
 
-    <span class="attribute">#[<span class="ident">actix_rt</span>::<span class="ident">test</span>]</span>
+    <span class="attribute">#[<span class="ident">actix_rt::test</span>]</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_boundary</span>() {
-        <span class="kw">let</span> <span class="ident">headers</span> <span class="op">=</span> <span class="ident">HeaderMap</span>::<span class="ident">new</span>();
-        <span class="kw">match</span> <span class="ident">Multipart</span>::<span class="ident">boundary</span>(<span class="kw-2">&amp;</span><span class="ident">headers</span>) {
-            <span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">NoContentType</span>) <span class="op">=</span><span class="op">&gt;</span> {}
-            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(<span class="string">&quot;should not happen&quot;</span>),
+        <span class="kw">let</span> <span class="ident">headers</span> <span class="op">=</span> <span class="ident">HeaderMap::new</span>();
+        <span class="kw">match</span> <span class="ident">Multipart::boundary</span>(<span class="kw-2">&amp;</span><span class="ident">headers</span>) {
+            <span class="prelude-val">Err</span>(<span class="ident">MultipartError::NoContentType</span>) <span class="op">=</span><span class="op">&gt;</span> {}
+            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable!</span>(<span class="string">&quot;should not happen&quot;</span>),
         }
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">headers</span> <span class="op">=</span> <span class="ident">HeaderMap</span>::<span class="ident">new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">headers</span> <span class="op">=</span> <span class="ident">HeaderMap::new</span>();
         <span class="ident">headers</span>.<span class="ident">insert</span>(
-            <span class="ident">header</span>::<span class="ident">CONTENT_TYPE</span>,
-            <span class="ident">header</span>::<span class="ident">HeaderValue</span>::<span class="ident">from_static</span>(<span class="string">&quot;test&quot;</span>),
+            <span class="ident">header::CONTENT_TYPE</span>,
+            <span class="ident">header::HeaderValue::from_static</span>(<span class="string">&quot;test&quot;</span>),
         );
 
-        <span class="kw">match</span> <span class="ident">Multipart</span>::<span class="ident">boundary</span>(<span class="kw-2">&amp;</span><span class="ident">headers</span>) {
-            <span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">ParseContentType</span>) <span class="op">=</span><span class="op">&gt;</span> {}
-            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(<span class="string">&quot;should not happen&quot;</span>),
+        <span class="kw">match</span> <span class="ident">Multipart::boundary</span>(<span class="kw-2">&amp;</span><span class="ident">headers</span>) {
+            <span class="prelude-val">Err</span>(<span class="ident">MultipartError::ParseContentType</span>) <span class="op">=</span><span class="op">&gt;</span> {}
+            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable!</span>(<span class="string">&quot;should not happen&quot;</span>),
         }
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">headers</span> <span class="op">=</span> <span class="ident">HeaderMap</span>::<span class="ident">new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">headers</span> <span class="op">=</span> <span class="ident">HeaderMap::new</span>();
         <span class="ident">headers</span>.<span class="ident">insert</span>(
-            <span class="ident">header</span>::<span class="ident">CONTENT_TYPE</span>,
-            <span class="ident">header</span>::<span class="ident">HeaderValue</span>::<span class="ident">from_static</span>(<span class="string">&quot;multipart/mixed&quot;</span>),
+            <span class="ident">header::CONTENT_TYPE</span>,
+            <span class="ident">header::HeaderValue::from_static</span>(<span class="string">&quot;multipart/mixed&quot;</span>),
         );
-        <span class="kw">match</span> <span class="ident">Multipart</span>::<span class="ident">boundary</span>(<span class="kw-2">&amp;</span><span class="ident">headers</span>) {
-            <span class="prelude-val">Err</span>(<span class="ident">MultipartError</span>::<span class="ident">Boundary</span>) <span class="op">=</span><span class="op">&gt;</span> {}
-            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(<span class="string">&quot;should not happen&quot;</span>),
+        <span class="kw">match</span> <span class="ident">Multipart::boundary</span>(<span class="kw-2">&amp;</span><span class="ident">headers</span>) {
+            <span class="prelude-val">Err</span>(<span class="ident">MultipartError::Boundary</span>) <span class="op">=</span><span class="op">&gt;</span> {}
+            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable!</span>(<span class="string">&quot;should not happen&quot;</span>),
         }
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">headers</span> <span class="op">=</span> <span class="ident">HeaderMap</span>::<span class="ident">new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">headers</span> <span class="op">=</span> <span class="ident">HeaderMap::new</span>();
         <span class="ident">headers</span>.<span class="ident">insert</span>(
-            <span class="ident">header</span>::<span class="ident">CONTENT_TYPE</span>,
-            <span class="ident">header</span>::<span class="ident">HeaderValue</span>::<span class="ident">from_static</span>(
+            <span class="ident">header::CONTENT_TYPE</span>,
+            <span class="ident">header::HeaderValue::from_static</span>(
                 <span class="string">&quot;multipart/mixed; boundary=\&quot;5c02368e880e436dab70ed54e1c58209\&quot;&quot;</span>,
             ),
         );
 
-        <span class="macro">assert_eq</span><span class="macro">!</span>(
-            <span class="ident">Multipart</span>::<span class="ident">boundary</span>(<span class="kw-2">&amp;</span><span class="ident">headers</span>).<span class="ident">unwrap</span>(),
+        <span class="macro">assert_eq!</span>(
+            <span class="ident">Multipart::boundary</span>(<span class="kw-2">&amp;</span><span class="ident">headers</span>).<span class="ident">unwrap</span>(),
             <span class="string">&quot;5c02368e880e436dab70ed54e1c58209&quot;</span>
         );
     }
 
     <span class="kw">fn</span> <span class="ident">create_stream</span>() <span class="op">-</span><span class="op">&gt;</span> (
-        <span class="ident">mpsc</span>::<span class="ident">UnboundedSender</span><span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Bytes</span>, <span class="ident">PayloadError</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        <span class="ident">mpsc::UnboundedSender</span><span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Bytes</span>, <span class="ident">PayloadError</span><span class="op">&gt;</span><span class="op">&gt;</span>,
         <span class="kw">impl</span> <span class="ident">Stream</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Bytes</span>, <span class="ident">PayloadError</span><span class="op">&gt;</span><span class="op">&gt;</span>,
     ) {
-        <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) <span class="op">=</span> <span class="ident">mpsc</span>::<span class="ident">unbounded_channel</span>();
+        <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) <span class="op">=</span> <span class="ident">mpsc::unbounded_channel</span>();
 
         (
             <span class="ident">tx</span>,
-            <span class="ident">UnboundedReceiverStream</span>::<span class="ident">new</span>(<span class="ident">rx</span>).<span class="ident">map</span>(<span class="op">|</span><span class="ident">res</span><span class="op">|</span> <span class="ident">res</span>.<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="macro">panic</span><span class="macro">!</span>())),
+            <span class="ident">UnboundedReceiverStream::new</span>(<span class="ident">rx</span>).<span class="ident">map</span>(<span class="op">|</span><span class="ident">res</span><span class="op">|</span> <span class="ident">res</span>.<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="macro">panic!</span>())),
         )
     }
 
@@ -2076,19 +2075,19 @@
     <span class="kw">impl</span> <span class="ident">Stream</span> <span class="kw">for</span> <span class="ident">SlowStream</span> {
         <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Bytes</span>, <span class="ident">PayloadError</span><span class="op">&gt;</span>;
 
-        <span class="kw">fn</span> <span class="ident">poll_next</span>(<span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Item</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="kw">fn</span> <span class="ident">poll_next</span>(<span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span><span class="ident">::Item</span><span class="op">&gt;</span><span class="op">&gt;</span> {
             <span class="kw">let</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_mut</span>();
             <span class="kw">if</span> <span class="op">!</span><span class="ident">this</span>.<span class="ident">ready</span> {
                 <span class="ident">this</span>.<span class="ident">ready</span> <span class="op">=</span> <span class="bool-val">true</span>;
                 <span class="ident">cx</span>.<span class="ident">waker</span>().<span class="ident">wake_by_ref</span>();
-                <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Pending</span>;
+                <span class="kw">return</span> <span class="ident">Poll::Pending</span>;
             }
 
             <span class="kw">if</span> <span class="ident">this</span>.<span class="ident">pos</span> <span class="op">=</span><span class="op">=</span> <span class="ident">this</span>.<span class="ident">bytes</span>.<span class="ident">len</span>() {
-                <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">None</span>);
+                <span class="kw">return</span> <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>);
             }
 
-            <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">this</span>.<span class="ident">bytes</span>.<span class="ident">slice</span>(<span class="ident">this</span>.<span class="ident">pos</span>..(<span class="ident">this</span>.<span class="ident">pos</span> <span class="op">+</span> <span class="number">1</span>)))));
+            <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">this</span>.<span class="ident">bytes</span>.<span class="ident">slice</span>(<span class="ident">this</span>.<span class="ident">pos</span>..(<span class="ident">this</span>.<span class="ident">pos</span> <span class="op">+</span> <span class="number">1</span>)))));
             <span class="ident">this</span>.<span class="ident">pos</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
             <span class="ident">this</span>.<span class="ident">ready</span> <span class="op">=</span> <span class="bool-val">false</span>;
             <span class="ident">res</span>
@@ -2096,7 +2095,7 @@
     }
 
     <span class="kw">fn</span> <span class="ident">create_simple_request_with_header</span>() <span class="op">-</span><span class="op">&gt;</span> (<span class="ident">Bytes</span>, <span class="ident">HeaderMap</span>) {
-        <span class="kw">let</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">Bytes</span>::<span class="ident">from</span>(
+        <span class="kw">let</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">Bytes::from</span>(
             <span class="string">&quot;testasdadsad\r\n\
              --abbc761f78ff4d7cb7573b5a23f96ef0\r\n\
              Content-Disposition: form-data; name=\&quot;file\&quot;; filename=\&quot;fn.txt\&quot;\r\n\
@@ -2107,17 +2106,17 @@
              data\r\n\
              --abbc761f78ff4d7cb7573b5a23f96ef0--\r\n&quot;</span>,
         );
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">headers</span> <span class="op">=</span> <span class="ident">HeaderMap</span>::<span class="ident">new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">headers</span> <span class="op">=</span> <span class="ident">HeaderMap::new</span>();
         <span class="ident">headers</span>.<span class="ident">insert</span>(
-            <span class="ident">header</span>::<span class="ident">CONTENT_TYPE</span>,
-            <span class="ident">header</span>::<span class="ident">HeaderValue</span>::<span class="ident">from_static</span>(
+            <span class="ident">header::CONTENT_TYPE</span>,
+            <span class="ident">header::HeaderValue::from_static</span>(
                 <span class="string">&quot;multipart/mixed; boundary=\&quot;abbc761f78ff4d7cb7573b5a23f96ef0\&quot;&quot;</span>,
             ),
         );
         (<span class="ident">bytes</span>, <span class="ident">headers</span>)
     }
 
-    <span class="attribute">#[<span class="ident">actix_rt</span>::<span class="ident">test</span>]</span>
+    <span class="attribute">#[<span class="ident">actix_rt::test</span>]</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_multipart_no_end_crlf</span>() {
         <span class="kw">let</span> (<span class="ident">sender</span>, <span class="ident">payload</span>) <span class="op">=</span> <span class="ident">create_stream</span>();
         <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">bytes</span>, <span class="ident">headers</span>) <span class="op">=</span> <span class="ident">create_simple_request_with_header</span>();
@@ -2126,252 +2125,251 @@
         <span class="ident">sender</span>.<span class="ident">send</span>(<span class="prelude-val">Ok</span>(<span class="ident">bytes_stripped</span>)).<span class="ident">unwrap</span>();
         <span class="ident">drop</span>(<span class="ident">sender</span>); <span class="comment">// eof</span>
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">multipart</span> <span class="op">=</span> <span class="ident">Multipart</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="ident">headers</span>, <span class="ident">payload</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">multipart</span> <span class="op">=</span> <span class="ident">Multipart::new</span>(<span class="kw-2">&amp;</span><span class="ident">headers</span>, <span class="ident">payload</span>);
 
         <span class="kw">match</span> <span class="ident">multipart</span>.<span class="ident">next</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>() {
             <span class="prelude-val">Ok</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {}
-            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(),
+            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable!</span>(),
         }
 
         <span class="kw">match</span> <span class="ident">multipart</span>.<span class="ident">next</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>() {
             <span class="prelude-val">Ok</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {}
-            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(),
+            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable!</span>(),
         }
 
         <span class="kw">match</span> <span class="ident">multipart</span>.<span class="ident">next</span>().<span class="kw">await</span> {
             <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {}
-            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(),
+            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable!</span>(),
         }
     }
 
-    <span class="attribute">#[<span class="ident">actix_rt</span>::<span class="ident">test</span>]</span>
+    <span class="attribute">#[<span class="ident">actix_rt::test</span>]</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_multipart</span>() {
         <span class="kw">let</span> (<span class="ident">sender</span>, <span class="ident">payload</span>) <span class="op">=</span> <span class="ident">create_stream</span>();
         <span class="kw">let</span> (<span class="ident">bytes</span>, <span class="ident">headers</span>) <span class="op">=</span> <span class="ident">create_simple_request_with_header</span>();
 
         <span class="ident">sender</span>.<span class="ident">send</span>(<span class="prelude-val">Ok</span>(<span class="ident">bytes</span>)).<span class="ident">unwrap</span>();
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">multipart</span> <span class="op">=</span> <span class="ident">Multipart</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="ident">headers</span>, <span class="ident">payload</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">multipart</span> <span class="op">=</span> <span class="ident">Multipart::new</span>(<span class="kw-2">&amp;</span><span class="ident">headers</span>, <span class="ident">payload</span>);
         <span class="kw">match</span> <span class="ident">multipart</span>.<span class="ident">next</span>().<span class="kw">await</span> {
             <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="kw-2">mut</span> <span class="ident">field</span>)) <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">cd</span> <span class="op">=</span> <span class="ident">field</span>.<span class="ident">content_disposition</span>().<span class="ident">unwrap</span>();
-                <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">cd</span>.<span class="ident">disposition</span>, <span class="ident">DispositionType</span>::<span class="ident">FormData</span>);
-                <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">cd</span>.<span class="ident">parameters</span>[<span class="number">0</span>], <span class="ident">DispositionParam</span>::<span class="ident">Name</span>(<span class="string">&quot;file&quot;</span>.<span class="ident">into</span>()));
+                <span class="macro">assert_eq!</span>(<span class="ident">cd</span>.<span class="ident">disposition</span>, <span class="ident">DispositionType::FormData</span>);
+                <span class="macro">assert_eq!</span>(<span class="ident">cd</span>.<span class="ident">parameters</span>[<span class="number">0</span>], <span class="ident">DispositionParam::Name</span>(<span class="string">&quot;file&quot;</span>.<span class="ident">into</span>()));
 
-                <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">field</span>.<span class="ident">content_type</span>().<span class="ident">type_</span>(), <span class="ident">mime</span>::<span class="ident">TEXT</span>);
-                <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">field</span>.<span class="ident">content_type</span>().<span class="ident">subtype</span>(), <span class="ident">mime</span>::<span class="ident">PLAIN</span>);
+                <span class="macro">assert_eq!</span>(<span class="ident">field</span>.<span class="ident">content_type</span>().<span class="ident">type_</span>(), <span class="ident">mime::TEXT</span>);
+                <span class="macro">assert_eq!</span>(<span class="ident">field</span>.<span class="ident">content_type</span>().<span class="ident">subtype</span>(), <span class="ident">mime::PLAIN</span>);
 
                 <span class="kw">match</span> <span class="ident">field</span>.<span class="ident">next</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>() {
-                    <span class="prelude-val">Ok</span>(<span class="ident">chunk</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">chunk</span>, <span class="string">&quot;test&quot;</span>),
-                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(),
+                    <span class="prelude-val">Ok</span>(<span class="ident">chunk</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="macro">assert_eq!</span>(<span class="ident">chunk</span>, <span class="string">&quot;test&quot;</span>),
+                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable!</span>(),
                 }
                 <span class="kw">match</span> <span class="ident">field</span>.<span class="ident">next</span>().<span class="kw">await</span> {
                     <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {}
-                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(),
+                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable!</span>(),
                 }
             }
-            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(),
+            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable!</span>(),
         }
 
         <span class="kw">match</span> <span class="ident">multipart</span>.<span class="ident">next</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>() {
             <span class="prelude-val">Ok</span>(<span class="kw-2">mut</span> <span class="ident">field</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">field</span>.<span class="ident">content_type</span>().<span class="ident">type_</span>(), <span class="ident">mime</span>::<span class="ident">TEXT</span>);
-                <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">field</span>.<span class="ident">content_type</span>().<span class="ident">subtype</span>(), <span class="ident">mime</span>::<span class="ident">PLAIN</span>);
+                <span class="macro">assert_eq!</span>(<span class="ident">field</span>.<span class="ident">content_type</span>().<span class="ident">type_</span>(), <span class="ident">mime::TEXT</span>);
+                <span class="macro">assert_eq!</span>(<span class="ident">field</span>.<span class="ident">content_type</span>().<span class="ident">subtype</span>(), <span class="ident">mime::PLAIN</span>);
 
                 <span class="kw">match</span> <span class="ident">field</span>.<span class="ident">next</span>().<span class="kw">await</span> {
-                    <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">chunk</span>)) <span class="op">=</span><span class="op">&gt;</span> <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">chunk</span>, <span class="string">&quot;data&quot;</span>),
-                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(),
+                    <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">chunk</span>)) <span class="op">=</span><span class="op">&gt;</span> <span class="macro">assert_eq!</span>(<span class="ident">chunk</span>, <span class="string">&quot;data&quot;</span>),
+                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable!</span>(),
                 }
                 <span class="kw">match</span> <span class="ident">field</span>.<span class="ident">next</span>().<span class="kw">await</span> {
                     <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {}
-                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(),
+                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable!</span>(),
                 }
             }
-            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(),
+            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable!</span>(),
         }
 
         <span class="kw">match</span> <span class="ident">multipart</span>.<span class="ident">next</span>().<span class="kw">await</span> {
             <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {}
-            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(),
+            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable!</span>(),
         }
     }
 
     <span class="comment">// Loops, collecting all bytes until end-of-field</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">get_whole_field</span>(<span class="ident">field</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Field</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">BytesMut</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">b</span> <span class="op">=</span> <span class="ident">BytesMut</span>::<span class="ident">new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">b</span> <span class="op">=</span> <span class="ident">BytesMut::new</span>();
         <span class="kw">loop</span> {
             <span class="kw">match</span> <span class="ident">field</span>.<span class="ident">next</span>().<span class="kw">await</span> {
                 <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="ident">chunk</span>)) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">b</span>.<span class="ident">extend_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">chunk</span>),
                 <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">b</span>,
-                <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(),
+                <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable!</span>(),
             }
         }
     }
 
-    <span class="attribute">#[<span class="ident">actix_rt</span>::<span class="ident">test</span>]</span>
+    <span class="attribute">#[<span class="ident">actix_rt::test</span>]</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_stream</span>() {
         <span class="kw">let</span> (<span class="ident">bytes</span>, <span class="ident">headers</span>) <span class="op">=</span> <span class="ident">create_simple_request_with_header</span>();
-        <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">SlowStream</span>::<span class="ident">new</span>(<span class="ident">bytes</span>);
+        <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">SlowStream::new</span>(<span class="ident">bytes</span>);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">multipart</span> <span class="op">=</span> <span class="ident">Multipart</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="ident">headers</span>, <span class="ident">payload</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">multipart</span> <span class="op">=</span> <span class="ident">Multipart::new</span>(<span class="kw-2">&amp;</span><span class="ident">headers</span>, <span class="ident">payload</span>);
         <span class="kw">match</span> <span class="ident">multipart</span>.<span class="ident">next</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>() {
             <span class="prelude-val">Ok</span>(<span class="kw-2">mut</span> <span class="ident">field</span>) <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">cd</span> <span class="op">=</span> <span class="ident">field</span>.<span class="ident">content_disposition</span>().<span class="ident">unwrap</span>();
-                <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">cd</span>.<span class="ident">disposition</span>, <span class="ident">DispositionType</span>::<span class="ident">FormData</span>);
-                <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">cd</span>.<span class="ident">parameters</span>[<span class="number">0</span>], <span class="ident">DispositionParam</span>::<span class="ident">Name</span>(<span class="string">&quot;file&quot;</span>.<span class="ident">into</span>()));
+                <span class="macro">assert_eq!</span>(<span class="ident">cd</span>.<span class="ident">disposition</span>, <span class="ident">DispositionType::FormData</span>);
+                <span class="macro">assert_eq!</span>(<span class="ident">cd</span>.<span class="ident">parameters</span>[<span class="number">0</span>], <span class="ident">DispositionParam::Name</span>(<span class="string">&quot;file&quot;</span>.<span class="ident">into</span>()));
 
-                <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">field</span>.<span class="ident">content_type</span>().<span class="ident">type_</span>(), <span class="ident">mime</span>::<span class="ident">TEXT</span>);
-                <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">field</span>.<span class="ident">content_type</span>().<span class="ident">subtype</span>(), <span class="ident">mime</span>::<span class="ident">PLAIN</span>);
+                <span class="macro">assert_eq!</span>(<span class="ident">field</span>.<span class="ident">content_type</span>().<span class="ident">type_</span>(), <span class="ident">mime::TEXT</span>);
+                <span class="macro">assert_eq!</span>(<span class="ident">field</span>.<span class="ident">content_type</span>().<span class="ident">subtype</span>(), <span class="ident">mime::PLAIN</span>);
 
-                <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">get_whole_field</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">field</span>).<span class="kw">await</span>, <span class="string">&quot;test&quot;</span>);
+                <span class="macro">assert_eq!</span>(<span class="ident">get_whole_field</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">field</span>).<span class="kw">await</span>, <span class="string">&quot;test&quot;</span>);
             }
-            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(),
+            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable!</span>(),
         }
 
         <span class="kw">match</span> <span class="ident">multipart</span>.<span class="ident">next</span>().<span class="kw">await</span> {
             <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="kw-2">mut</span> <span class="ident">field</span>)) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">field</span>.<span class="ident">content_type</span>().<span class="ident">type_</span>(), <span class="ident">mime</span>::<span class="ident">TEXT</span>);
-                <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">field</span>.<span class="ident">content_type</span>().<span class="ident">subtype</span>(), <span class="ident">mime</span>::<span class="ident">PLAIN</span>);
+                <span class="macro">assert_eq!</span>(<span class="ident">field</span>.<span class="ident">content_type</span>().<span class="ident">type_</span>(), <span class="ident">mime::TEXT</span>);
+                <span class="macro">assert_eq!</span>(<span class="ident">field</span>.<span class="ident">content_type</span>().<span class="ident">subtype</span>(), <span class="ident">mime::PLAIN</span>);
 
-                <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">get_whole_field</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">field</span>).<span class="kw">await</span>, <span class="string">&quot;data&quot;</span>);
+                <span class="macro">assert_eq!</span>(<span class="ident">get_whole_field</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">field</span>).<span class="kw">await</span>, <span class="string">&quot;data&quot;</span>);
             }
-            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(),
+            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable!</span>(),
         }
 
         <span class="kw">match</span> <span class="ident">multipart</span>.<span class="ident">next</span>().<span class="kw">await</span> {
             <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> {}
-            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(),
+            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable!</span>(),
         }
     }
 
-    <span class="attribute">#[<span class="ident">actix_rt</span>::<span class="ident">test</span>]</span>
+    <span class="attribute">#[<span class="ident">actix_rt::test</span>]</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_basic</span>() {
-        <span class="kw">let</span> (<span class="kw">_</span>, <span class="ident">payload</span>) <span class="op">=</span> <span class="ident">Payload</span>::<span class="ident">create</span>(<span class="bool-val">false</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">PayloadBuffer</span>::<span class="ident">new</span>(<span class="ident">payload</span>);
+        <span class="kw">let</span> (<span class="kw">_</span>, <span class="ident">payload</span>) <span class="op">=</span> <span class="ident">Payload::create</span>(<span class="bool-val">false</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">PayloadBuffer::new</span>(<span class="ident">payload</span>);
 
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">0</span>);
+        <span class="macro">assert_eq!</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">0</span>);
         <span class="ident">lazy</span>(<span class="op">|</span><span class="ident">cx</span><span class="op">|</span> <span class="ident">payload</span>.<span class="ident">poll_stream</span>(<span class="ident">cx</span>)).<span class="kw">await</span>.<span class="ident">unwrap</span>();
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="prelude-val">None</span>, <span class="ident">payload</span>.<span class="ident">read_max</span>(<span class="number">1</span>).<span class="ident">unwrap</span>());
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, <span class="ident">payload</span>.<span class="ident">read_max</span>(<span class="number">1</span>).<span class="ident">unwrap</span>());
     }
 
-    <span class="attribute">#[<span class="ident">actix_rt</span>::<span class="ident">test</span>]</span>
+    <span class="attribute">#[<span class="ident">actix_rt::test</span>]</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_eof</span>() {
-        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">sender</span>, <span class="ident">payload</span>) <span class="op">=</span> <span class="ident">Payload</span>::<span class="ident">create</span>(<span class="bool-val">false</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">PayloadBuffer</span>::<span class="ident">new</span>(<span class="ident">payload</span>);
+        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">sender</span>, <span class="ident">payload</span>) <span class="op">=</span> <span class="ident">Payload::create</span>(<span class="bool-val">false</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">PayloadBuffer::new</span>(<span class="ident">payload</span>);
 
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="prelude-val">None</span>, <span class="ident">payload</span>.<span class="ident">read_max</span>(<span class="number">4</span>).<span class="ident">unwrap</span>());
-        <span class="ident">sender</span>.<span class="ident">feed_data</span>(<span class="ident">Bytes</span>::<span class="ident">from</span>(<span class="string">&quot;data&quot;</span>));
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, <span class="ident">payload</span>.<span class="ident">read_max</span>(<span class="number">4</span>).<span class="ident">unwrap</span>());
+        <span class="ident">sender</span>.<span class="ident">feed_data</span>(<span class="ident">Bytes::from</span>(<span class="string">&quot;data&quot;</span>));
         <span class="ident">sender</span>.<span class="ident">feed_eof</span>();
         <span class="ident">lazy</span>(<span class="op">|</span><span class="ident">cx</span><span class="op">|</span> <span class="ident">payload</span>.<span class="ident">poll_stream</span>(<span class="ident">cx</span>)).<span class="kw">await</span>.<span class="ident">unwrap</span>();
 
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="prelude-val">Some</span>(<span class="ident">Bytes</span>::<span class="ident">from</span>(<span class="string">&quot;data&quot;</span>)), <span class="ident">payload</span>.<span class="ident">read_max</span>(<span class="number">4</span>).<span class="ident">unwrap</span>());
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">0</span>);
-        <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">payload</span>.<span class="ident">read_max</span>(<span class="number">1</span>).<span class="ident">is_err</span>());
-        <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">payload</span>.<span class="ident">eof</span>);
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="ident">Bytes::from</span>(<span class="string">&quot;data&quot;</span>)), <span class="ident">payload</span>.<span class="ident">read_max</span>(<span class="number">4</span>).<span class="ident">unwrap</span>());
+        <span class="macro">assert_eq!</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">0</span>);
+        <span class="macro">assert!</span>(<span class="ident">payload</span>.<span class="ident">read_max</span>(<span class="number">1</span>).<span class="ident">is_err</span>());
+        <span class="macro">assert!</span>(<span class="ident">payload</span>.<span class="ident">eof</span>);
     }
 
-    <span class="attribute">#[<span class="ident">actix_rt</span>::<span class="ident">test</span>]</span>
+    <span class="attribute">#[<span class="ident">actix_rt::test</span>]</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_err</span>() {
-        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">sender</span>, <span class="ident">payload</span>) <span class="op">=</span> <span class="ident">Payload</span>::<span class="ident">create</span>(<span class="bool-val">false</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">PayloadBuffer</span>::<span class="ident">new</span>(<span class="ident">payload</span>);
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="prelude-val">None</span>, <span class="ident">payload</span>.<span class="ident">read_max</span>(<span class="number">1</span>).<span class="ident">unwrap</span>());
-        <span class="ident">sender</span>.<span class="ident">set_error</span>(<span class="ident">PayloadError</span>::<span class="ident">Incomplete</span>(<span class="prelude-val">None</span>));
+        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">sender</span>, <span class="ident">payload</span>) <span class="op">=</span> <span class="ident">Payload::create</span>(<span class="bool-val">false</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">PayloadBuffer::new</span>(<span class="ident">payload</span>);
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, <span class="ident">payload</span>.<span class="ident">read_max</span>(<span class="number">1</span>).<span class="ident">unwrap</span>());
+        <span class="ident">sender</span>.<span class="ident">set_error</span>(<span class="ident">PayloadError::Incomplete</span>(<span class="prelude-val">None</span>));
         <span class="ident">lazy</span>(<span class="op">|</span><span class="ident">cx</span><span class="op">|</span> <span class="ident">payload</span>.<span class="ident">poll_stream</span>(<span class="ident">cx</span>)).<span class="kw">await</span>.<span class="ident">err</span>().<span class="ident">unwrap</span>();
     }
 
-    <span class="attribute">#[<span class="ident">actix_rt</span>::<span class="ident">test</span>]</span>
+    <span class="attribute">#[<span class="ident">actix_rt::test</span>]</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_readmax</span>() {
-        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">sender</span>, <span class="ident">payload</span>) <span class="op">=</span> <span class="ident">Payload</span>::<span class="ident">create</span>(<span class="bool-val">false</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">PayloadBuffer</span>::<span class="ident">new</span>(<span class="ident">payload</span>);
+        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">sender</span>, <span class="ident">payload</span>) <span class="op">=</span> <span class="ident">Payload::create</span>(<span class="bool-val">false</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">PayloadBuffer::new</span>(<span class="ident">payload</span>);
 
-        <span class="ident">sender</span>.<span class="ident">feed_data</span>(<span class="ident">Bytes</span>::<span class="ident">from</span>(<span class="string">&quot;line1&quot;</span>));
-        <span class="ident">sender</span>.<span class="ident">feed_data</span>(<span class="ident">Bytes</span>::<span class="ident">from</span>(<span class="string">&quot;line2&quot;</span>));
+        <span class="ident">sender</span>.<span class="ident">feed_data</span>(<span class="ident">Bytes::from</span>(<span class="string">&quot;line1&quot;</span>));
+        <span class="ident">sender</span>.<span class="ident">feed_data</span>(<span class="ident">Bytes::from</span>(<span class="string">&quot;line2&quot;</span>));
         <span class="ident">lazy</span>(<span class="op">|</span><span class="ident">cx</span><span class="op">|</span> <span class="ident">payload</span>.<span class="ident">poll_stream</span>(<span class="ident">cx</span>)).<span class="kw">await</span>.<span class="ident">unwrap</span>();
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">10</span>);
+        <span class="macro">assert_eq!</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">10</span>);
 
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="prelude-val">Some</span>(<span class="ident">Bytes</span>::<span class="ident">from</span>(<span class="string">&quot;line1&quot;</span>)), <span class="ident">payload</span>.<span class="ident">read_max</span>(<span class="number">5</span>).<span class="ident">unwrap</span>());
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">5</span>);
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="ident">Bytes::from</span>(<span class="string">&quot;line1&quot;</span>)), <span class="ident">payload</span>.<span class="ident">read_max</span>(<span class="number">5</span>).<span class="ident">unwrap</span>());
+        <span class="macro">assert_eq!</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">5</span>);
 
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="prelude-val">Some</span>(<span class="ident">Bytes</span>::<span class="ident">from</span>(<span class="string">&quot;line2&quot;</span>)), <span class="ident">payload</span>.<span class="ident">read_max</span>(<span class="number">5</span>).<span class="ident">unwrap</span>());
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">0</span>);
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="ident">Bytes::from</span>(<span class="string">&quot;line2&quot;</span>)), <span class="ident">payload</span>.<span class="ident">read_max</span>(<span class="number">5</span>).<span class="ident">unwrap</span>());
+        <span class="macro">assert_eq!</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">0</span>);
     }
 
-    <span class="attribute">#[<span class="ident">actix_rt</span>::<span class="ident">test</span>]</span>
+    <span class="attribute">#[<span class="ident">actix_rt::test</span>]</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_readexactly</span>() {
-        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">sender</span>, <span class="ident">payload</span>) <span class="op">=</span> <span class="ident">Payload</span>::<span class="ident">create</span>(<span class="bool-val">false</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">PayloadBuffer</span>::<span class="ident">new</span>(<span class="ident">payload</span>);
+        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">sender</span>, <span class="ident">payload</span>) <span class="op">=</span> <span class="ident">Payload::create</span>(<span class="bool-val">false</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">PayloadBuffer::new</span>(<span class="ident">payload</span>);
 
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="prelude-val">None</span>, <span class="ident">payload</span>.<span class="ident">read_exact</span>(<span class="number">2</span>));
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, <span class="ident">payload</span>.<span class="ident">read_exact</span>(<span class="number">2</span>));
 
-        <span class="ident">sender</span>.<span class="ident">feed_data</span>(<span class="ident">Bytes</span>::<span class="ident">from</span>(<span class="string">&quot;line1&quot;</span>));
-        <span class="ident">sender</span>.<span class="ident">feed_data</span>(<span class="ident">Bytes</span>::<span class="ident">from</span>(<span class="string">&quot;line2&quot;</span>));
+        <span class="ident">sender</span>.<span class="ident">feed_data</span>(<span class="ident">Bytes::from</span>(<span class="string">&quot;line1&quot;</span>));
+        <span class="ident">sender</span>.<span class="ident">feed_data</span>(<span class="ident">Bytes::from</span>(<span class="string">&quot;line2&quot;</span>));
         <span class="ident">lazy</span>(<span class="op">|</span><span class="ident">cx</span><span class="op">|</span> <span class="ident">payload</span>.<span class="ident">poll_stream</span>(<span class="ident">cx</span>)).<span class="kw">await</span>.<span class="ident">unwrap</span>();
 
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="prelude-val">Some</span>(<span class="ident">Bytes</span>::<span class="ident">from_static</span>(<span class="string">b&quot;li&quot;</span>)), <span class="ident">payload</span>.<span class="ident">read_exact</span>(<span class="number">2</span>));
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">8</span>);
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="ident">Bytes::from_static</span>(<span class="string">b&quot;li&quot;</span>)), <span class="ident">payload</span>.<span class="ident">read_exact</span>(<span class="number">2</span>));
+        <span class="macro">assert_eq!</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">8</span>);
 
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="prelude-val">Some</span>(<span class="ident">Bytes</span>::<span class="ident">from_static</span>(<span class="string">b&quot;ne1l&quot;</span>)), <span class="ident">payload</span>.<span class="ident">read_exact</span>(<span class="number">4</span>));
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">4</span>);
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="ident">Bytes::from_static</span>(<span class="string">b&quot;ne1l&quot;</span>)), <span class="ident">payload</span>.<span class="ident">read_exact</span>(<span class="number">4</span>));
+        <span class="macro">assert_eq!</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">4</span>);
     }
 
-    <span class="attribute">#[<span class="ident">actix_rt</span>::<span class="ident">test</span>]</span>
+    <span class="attribute">#[<span class="ident">actix_rt::test</span>]</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_readuntil</span>() {
-        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">sender</span>, <span class="ident">payload</span>) <span class="op">=</span> <span class="ident">Payload</span>::<span class="ident">create</span>(<span class="bool-val">false</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">PayloadBuffer</span>::<span class="ident">new</span>(<span class="ident">payload</span>);
+        <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">sender</span>, <span class="ident">payload</span>) <span class="op">=</span> <span class="ident">Payload::create</span>(<span class="bool-val">false</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">PayloadBuffer::new</span>(<span class="ident">payload</span>);
 
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="prelude-val">None</span>, <span class="ident">payload</span>.<span class="ident">read_until</span>(<span class="string">b&quot;ne&quot;</span>).<span class="ident">unwrap</span>());
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, <span class="ident">payload</span>.<span class="ident">read_until</span>(<span class="string">b&quot;ne&quot;</span>).<span class="ident">unwrap</span>());
 
-        <span class="ident">sender</span>.<span class="ident">feed_data</span>(<span class="ident">Bytes</span>::<span class="ident">from</span>(<span class="string">&quot;line1&quot;</span>));
-        <span class="ident">sender</span>.<span class="ident">feed_data</span>(<span class="ident">Bytes</span>::<span class="ident">from</span>(<span class="string">&quot;line2&quot;</span>));
+        <span class="ident">sender</span>.<span class="ident">feed_data</span>(<span class="ident">Bytes::from</span>(<span class="string">&quot;line1&quot;</span>));
+        <span class="ident">sender</span>.<span class="ident">feed_data</span>(<span class="ident">Bytes::from</span>(<span class="string">&quot;line2&quot;</span>));
         <span class="ident">lazy</span>(<span class="op">|</span><span class="ident">cx</span><span class="op">|</span> <span class="ident">payload</span>.<span class="ident">poll_stream</span>(<span class="ident">cx</span>)).<span class="kw">await</span>.<span class="ident">unwrap</span>();
 
-        <span class="macro">assert_eq</span><span class="macro">!</span>(
-            <span class="prelude-val">Some</span>(<span class="ident">Bytes</span>::<span class="ident">from</span>(<span class="string">&quot;line&quot;</span>)),
+        <span class="macro">assert_eq!</span>(
+            <span class="prelude-val">Some</span>(<span class="ident">Bytes::from</span>(<span class="string">&quot;line&quot;</span>)),
             <span class="ident">payload</span>.<span class="ident">read_until</span>(<span class="string">b&quot;ne&quot;</span>).<span class="ident">unwrap</span>()
         );
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">6</span>);
+        <span class="macro">assert_eq!</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">6</span>);
 
-        <span class="macro">assert_eq</span><span class="macro">!</span>(
-            <span class="prelude-val">Some</span>(<span class="ident">Bytes</span>::<span class="ident">from</span>(<span class="string">&quot;1line2&quot;</span>)),
+        <span class="macro">assert_eq!</span>(
+            <span class="prelude-val">Some</span>(<span class="ident">Bytes::from</span>(<span class="string">&quot;1line2&quot;</span>)),
             <span class="ident">payload</span>.<span class="ident">read_until</span>(<span class="string">b&quot;2&quot;</span>).<span class="ident">unwrap</span>()
         );
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">0</span>);
+        <span class="macro">assert_eq!</span>(<span class="ident">payload</span>.<span class="ident">buf</span>.<span class="ident">len</span>(), <span class="number">0</span>);
     }
 
-    <span class="attribute">#[<span class="ident">actix_rt</span>::<span class="ident">test</span>]</span>
+    <span class="attribute">#[<span class="ident">actix_rt::test</span>]</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_multipart_from_error</span>() {
-        <span class="kw">let</span> <span class="ident">err</span> <span class="op">=</span> <span class="ident">MultipartError</span>::<span class="ident">NoContentType</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">multipart</span> <span class="op">=</span> <span class="ident">Multipart</span>::<span class="ident">from_error</span>(<span class="ident">err</span>);
-        <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">multipart</span>.<span class="ident">next</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>().<span class="ident">is_err</span>())
+        <span class="kw">let</span> <span class="ident">err</span> <span class="op">=</span> <span class="ident">MultipartError::NoContentType</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">multipart</span> <span class="op">=</span> <span class="ident">Multipart::from_error</span>(<span class="ident">err</span>);
+        <span class="macro">assert!</span>(<span class="ident">multipart</span>.<span class="ident">next</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>().<span class="ident">is_err</span>())
     }
 
-    <span class="attribute">#[<span class="ident">actix_rt</span>::<span class="ident">test</span>]</span>
+    <span class="attribute">#[<span class="ident">actix_rt::test</span>]</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_multipart_from_boundary</span>() {
         <span class="kw">let</span> (<span class="kw">_</span>, <span class="ident">payload</span>) <span class="op">=</span> <span class="ident">create_stream</span>();
         <span class="kw">let</span> (<span class="kw">_</span>, <span class="ident">headers</span>) <span class="op">=</span> <span class="ident">create_simple_request_with_header</span>();
-        <span class="kw">let</span> <span class="ident">boundary</span> <span class="op">=</span> <span class="ident">Multipart</span>::<span class="ident">boundary</span>(<span class="kw-2">&amp;</span><span class="ident">headers</span>);
-        <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">boundary</span>.<span class="ident">is_ok</span>());
-        <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">Multipart</span>::<span class="ident">from_boundary</span>(<span class="ident">boundary</span>.<span class="ident">unwrap</span>(), <span class="ident">payload</span>);
+        <span class="kw">let</span> <span class="ident">boundary</span> <span class="op">=</span> <span class="ident">Multipart::boundary</span>(<span class="kw-2">&amp;</span><span class="ident">headers</span>);
+        <span class="macro">assert!</span>(<span class="ident">boundary</span>.<span class="ident">is_ok</span>());
+        <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">Multipart::from_boundary</span>(<span class="ident">boundary</span>.<span class="ident">unwrap</span>(), <span class="ident">payload</span>);
     }
 
-    <span class="attribute">#[<span class="ident">actix_rt</span>::<span class="ident">test</span>]</span>
+    <span class="attribute">#[<span class="ident">actix_rt::test</span>]</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_multipart_payload_consumption</span>() {
         <span class="comment">// with sample payload and HttpRequest with no headers</span>
-        <span class="kw">let</span> (<span class="kw">_</span>, <span class="ident">inner_payload</span>) <span class="op">=</span> <span class="ident">Payload</span>::<span class="ident">create</span>(<span class="bool-val">false</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">actix_web</span>::<span class="ident">dev</span>::<span class="ident">Payload</span>::<span class="ident">from</span>(<span class="ident">inner_payload</span>);
-        <span class="kw">let</span> <span class="ident">req</span> <span class="op">=</span> <span class="ident">TestRequest</span>::<span class="ident">default</span>().<span class="ident">to_http_request</span>();
+        <span class="kw">let</span> (<span class="kw">_</span>, <span class="ident">inner_payload</span>) <span class="op">=</span> <span class="ident">Payload::create</span>(<span class="bool-val">false</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">actix_web::dev::Payload::from</span>(<span class="ident">inner_payload</span>);
+        <span class="kw">let</span> <span class="ident">req</span> <span class="op">=</span> <span class="ident">TestRequest::default</span>().<span class="ident">to_http_request</span>();
 
         <span class="comment">// multipart should generate an error</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">mp</span> <span class="op">=</span> <span class="ident">Multipart</span>::<span class="ident">from_request</span>(<span class="kw-2">&amp;</span><span class="ident">req</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">payload</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>();
-        <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">mp</span>.<span class="ident">next</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>().<span class="ident">is_err</span>());
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">mp</span> <span class="op">=</span> <span class="ident">Multipart::from_request</span>(<span class="kw-2">&amp;</span><span class="ident">req</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">payload</span>).<span class="kw">await</span>.<span class="ident">unwrap</span>();
+        <span class="macro">assert!</span>(<span class="ident">mp</span>.<span class="ident">next</span>().<span class="kw">await</span>.<span class="ident">unwrap</span>().<span class="ident">is_err</span>());
 
         <span class="comment">// and should not consume the payload</span>
         <span class="kw">match</span> <span class="ident">payload</span> {
-            <span class="ident">actix_web</span>::<span class="ident">dev</span>::<span class="ident">Payload</span>::<span class="ident">H1</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {} <span class="comment">//expected</span>
-            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(),
+            <span class="ident">actix_web::dev::Payload::H1</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {} <span class="comment">//expected</span>
+            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable!</span>(),
         }
     }
 }
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix_multipart" data-search-js="../../search-index.js"></div>
-    <script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script></body></html>
+</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix_multipart" data-search-index-js="../../search-index.js" data-search-js="../../search.js"></div><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script></body></html>
